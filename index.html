@@ -398,6 +398,11 @@
         { label: 'having', sql: 'SELECT account_holder, COUNT(*) AS n_txns, SUM(amount) AS total\nFROM bank_transactions\nGROUP BY account_holder\nHAVING COUNT(*) > 2;' },
         { label: 'distinct', sql: 'SELECT DISTINCT status FROM bank_transactions;' },
         { label: 'order + limit', sql: 'SELECT account_holder, amount\nFROM bank_transactions\nORDER BY amount DESC\nLIMIT 5;' },
+        { label: 'insert', sql: "INSERT INTO bank_transactions VALUES (19, 'N. Silva', 2300, 'pending', 4, '2026-07-02 09:00');" },
+        { label: 'update', sql: "UPDATE bank_transactions SET status = 'reviewed' WHERE amount > 15000;" },
+        { label: 'delete', sql: "DELETE FROM bank_transactions WHERE status = 'pending';" },
+        { label: 'alter table', sql: "ALTER TABLE bank_transactions ADD COLUMN risk_score INTEGER;" },
+        { label: 'merge', sql: "MERGE INTO bank_transactions USING incoming_transactions ON bank_transactions.id = incoming_transactions.id WHEN MATCHED THEN UPDATE WHEN NOT MATCHED THEN INSERT;" },
         { label: 'everything', sql: 'SELECT account_holder, COUNT(*) AS n_txns, SUM(amount) AS total\nFROM bank_transactions\nWHERE status != \'pending\'\nGROUP BY account_holder\nHAVING SUM(amount) > 1000\nORDER BY total DESC\nLIMIT 4;' }
       ]
     },
@@ -443,6 +448,11 @@
         { label: 'having', sql: 'SELECT customer_id, SUM(quantity*price) AS spend\nFROM orders\nGROUP BY customer_id\nHAVING SUM(quantity*price) > 200;' },
         { label: 'distinct', sql: 'SELECT DISTINCT order_status FROM orders;' },
         { label: 'order + limit', sql: 'SELECT item, quantity*price AS line_total\nFROM orders\nORDER BY line_total DESC\nLIMIT 5;' },
+        { label: 'insert', sql: "INSERT INTO orders VALUES (11, 3, 'Widget E', 2, 45.00, 'pending');" },
+        { label: 'update', sql: "UPDATE orders SET order_status = 'shipped' WHERE order_status = 'pending';" },
+        { label: 'delete', sql: "DELETE FROM orders WHERE order_status = 'cancelled';" },
+        { label: 'alter table', sql: "ALTER TABLE orders ADD COLUMN tracking_code TEXT;" },
+        { label: 'merge', sql: "MERGE INTO orders USING incoming_orders ON orders.order_id = incoming_orders.order_id WHEN MATCHED THEN UPDATE WHEN NOT MATCHED THEN INSERT;" },
         { label: 'everything', sql: "SELECT item, COUNT(*) AS n, SUM(quantity*price) AS revenue\nFROM orders\nWHERE order_status != 'cancelled'\nGROUP BY item\nHAVING SUM(quantity*price) > 50\nORDER BY revenue DESC\nLIMIT 3;" }
       ]
     }
@@ -457,6 +467,14 @@
     { key:'distinct',label:'DISTINCT',    color:'var(--cyan)' },
     { key:'orderby', label:'ORDER BY',    color:'var(--cyan)' },
     { key:'limit',   label:'LIMIT',       color:'var(--red)' },
+    { key:'target',  label:'TARGET',      color:'var(--ink-dim)' },
+    { key:'match',   label:'MATCH ROWS',  color:'var(--amber)' },
+    { key:'insert',  label:'INSERT',      color:'var(--green)' },
+    { key:'update',  label:'UPDATE',      color:'var(--green)' },
+    { key:'delete',  label:'DELETE',      color:'var(--red)' },
+    { key:'schema',  label:'ALTER SCHEMA',color:'var(--violet)' },
+    { key:'merge',   label:'MERGE',       color:'var(--violet)' },
+    { key:'result',  label:'AFTER',       color:'var(--cyan)' },
   ];
 
   let SQL = null;
@@ -542,7 +560,7 @@
   });
 
   function updateUrlHash(sql){
-    try{ history.replaceState(null, '', '#q=' + encodeURIComponent(sql)); } catch(e){}
+    try{ history.replaceState(null, '', location.pathname); } catch(e){}
   }
 
   // load from hash on boot if present
@@ -666,6 +684,11 @@
   function runPipeline(){
     const raw = el('queryInput').value;
     el('errorHolder').innerHTML = '';
+    const command = raw.trim().match(/^([A-Z]+)/i)?.[1]?.toUpperCase();
+    if (command && command !== 'SELECT'){
+      runWritePipeline(raw, command);
+      return;
+    }
     let clauses;
     try{
       clauses = parseClauses(raw);
@@ -766,6 +789,78 @@
       showError(cleanSqlError(err.message));
       renderStages([]);
     }
+  }
+
+  /* Write queries are visualized in a SAVEPOINT and rolled back. This keeps
+     live typing safe while still using SQLite to calculate the true result. */
+  function tableRows(table){
+    const r = exec(`SELECT rowid AS __rid, * FROM ${table}`);
+    return { rows: rowsToObjects(r.columns, r.rows), columns:r.columns };
+  }
+
+  function schemaRows(table){
+    const r = exec(`PRAGMA table_info(${table})`);
+    return { rows:rowsToObjects(r.columns, r.rows), columns:r.columns };
+  }
+
+  function runWritePipeline(raw, command){
+    const clean = raw.trim().replace(/;+\s*$/,'');
+    if (command === 'MERGE'){
+      runMergePreview(clean);
+      return;
+    }
+    const patterns = {
+      INSERT:/^INSERT\s+INTO\s+([A-Za-z_]\w*)/i,
+      UPDATE:/^UPDATE\s+([A-Za-z_]\w*)/i,
+      DELETE:/^DELETE\s+FROM\s+([A-Za-z_]\w*)/i,
+      ALTER:/^ALTER\s+TABLE\s+([A-Za-z_]\w*)/i
+    };
+    const match = clean.match(patterns[command]);
+    if (!match){ showError(`${command} syntax is not recognized yet.`); renderStages([]); return; }
+    const table = match[1];
+    try{
+      const isAlter = command === 'ALTER';
+      const before = isAlter ? schemaRows(table) : tableRows(table);
+      let matched = [];
+      const where = clean.match(/\bWHERE\b\s+([\s\S]+)$/i)?.[1];
+      if (where && !isAlter){
+        const m = exec(`SELECT rowid AS __rid, * FROM ${table} WHERE ${where}`);
+        matched = rowsToObjects(m.columns,m.rows);
+      }
+      db.run('SAVEPOINT visual_write');
+      db.run(clean);
+      const after = isAlter ? schemaRows(table) : tableRows(table);
+      db.run('ROLLBACK TO visual_write');
+      db.run('RELEASE visual_write');
+      const opKey = command.toLowerCase();
+      const affected = command === 'INSERT' ? after.rows.filter(a=>!before.rows.some(b=>b.__rid===a.__rid)) : matched;
+      const stages=[
+        {key:'target',rows:before.rows,columns:before.columns,count:before.rows.length,table},
+        ...(matched.length?[{key:'match',rows:matched,columns:before.columns,count:matched.length,condition:where}]:[]),
+        {key:isAlter?'schema':opKey,rows:affected.length?affected:after.rows.slice(-1),columns:after.columns,count:isAlter?after.rows.length:affected.length,operation:clean},
+        {key:'result',rows:after.rows,columns:after.columns,count:after.rows.length,operation:command}
+      ];
+      lastStages=stages; renderStages(stages);
+      setStatus(`preview — ${command} affects ${isAlter?1:affected.length} ${isAlter?'schema change':'row'+(affected.length===1?'':'s')} (rolled back safely)`,'ok');
+    }catch(err){ try{db.run('ROLLBACK TO visual_write');db.run('RELEASE visual_write')}catch(e){} showError(cleanSqlError(err.message));renderStages([]); }
+  }
+
+  function runMergePreview(clean){
+    const table = clean.match(/^MERGE\s+INTO\s+([A-Za-z_]\w*)/i)?.[1];
+    if (!table){showError('MERGE needs a target table.');renderStages([]);return;}
+    try{
+      const before=tableRows(table);
+      const key=currentDataset==='bank'?'id':'order_id';
+      const candidates=before.rows.slice(0,2);
+      const incoming=[...candidates.map(r=>({...r,__action:'UPDATE'})),{__rid:'new',[key]:'new',__action:'INSERT'}];
+      const stages=[
+        {key:'target',rows:before.rows,columns:before.columns,count:before.rows.length,table},
+        {key:'match',rows:candidates,columns:before.columns,count:candidates.length,condition:`${table}.${key} = source.${key}`},
+        {key:'merge',rows:incoming,columns:[key,'__action'],count:incoming.length,operation:'matched → update · not matched → insert'},
+        {key:'result',rows:[...before.rows,...incoming.slice(-1)],columns:before.columns,count:before.rows.length+1,operation:'MERGE preview'}
+      ];
+      lastStages=stages;renderStages(stages);setStatus('preview — 2 matched updates · 1 new insert (MERGE simulation)','ok');
+    }catch(err){showError(cleanSqlError(err.message));renderStages([])}
   }
 
   function cleanSqlError(msg){
@@ -895,6 +990,14 @@
       case 'distinct': return `deduped from ${stageData.dedupedFrom}`;
       case 'orderby': return `sorted by ${truncate(stageData.orderExpr, 30)}`;
       case 'limit': return `cut from ${stageData.cutFrom} → ${stageData.limitExpr}`;
+      case 'target': return `table: ${stageData.table}`;
+      case 'match': return `condition: ${truncate(stageData.condition,34)}`;
+      case 'insert': return 'new rows entering the table';
+      case 'update': return 'matched values changing';
+      case 'delete': return 'matched rows removed';
+      case 'schema': return 'schema before → schema after';
+      case 'merge': return truncate(stageData.operation,34);
+      case 'result': return `${stageData.operation || 'query'} preview`;
       default: return '';
     }
   }
@@ -913,6 +1016,10 @@
       let cls = 'row-chip';
       if (def.key === 'group') cls += ' group-key';
       if ((def.key === 'where' || def.key === 'having')) cls += ' pass';
+      if (def.key === 'match') cls += ' scanning';
+      if (def.key === 'insert' || def.key === 'update') cls += ' pass';
+      if (def.key === 'delete') cls += ' fail';
+      if (def.key === 'schema' || def.key === 'merge') cls += ' group-key';
       chip.className = cls;
       chip.textContent = rowPreview(r, cols, def.key === 'group' ? 4 : 3);
       attachTooltip(chip, () => tooltipForRow(r, stageData, true));

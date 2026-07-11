@@ -83,6 +83,21 @@
   }
   .icon-btn:hover{ border-color: var(--ink); color: var(--ink); }
 
+  .token-strip{ display:flex; flex-wrap:wrap; gap:5px; margin-top:9px; align-items:center; }
+  .token-strip .tok-caption{ font-family: var(--mono); font-size:9.5px; color: var(--ink-faint); margin-right:4px; text-transform:uppercase; letter-spacing:0.05em; }
+  .tok-chip{
+    font-family: var(--mono); font-size:11.5px; padding:3px 9px; border-radius:7px; font-weight:600;
+    animation: tokIn .25s ease backwards;
+  }
+  @keyframes tokIn{ from{ opacity:0; transform: translateY(3px); } to{ opacity:1; transform:translateY(0); } }
+  .tok-keyword{ background: rgba(28,27,25,0.9); color:#fff; }
+  .tok-table{ background: var(--c-from-bg); color: var(--c-from); }
+  .tok-column{ background: var(--c-select-bg); color: var(--c-select); }
+  .tok-string{ background: var(--c-where-bg); color: var(--c-where); }
+  .tok-number{ background: var(--c-order-bg); color: var(--c-order); }
+  .tok-operator{ background: var(--c-group-bg); color: var(--c-group); }
+  .tok-punct{ background: transparent; color: var(--ink-faint); padding:3px 2px; }
+
   .meta-row{ display:flex; justify-content:space-between; align-items:center; margin-top:10px; flex-wrap:wrap; gap:10px; }
   .status-msg{ font-family: var(--mono); font-size:12px; color: var(--ink-faint); }
   .status-msg.error{ color: var(--c-limit); }
@@ -141,7 +156,7 @@
   .stage-count{ font-family: var(--sora); font-size:26px; font-weight:800; line-height:1; }
   .stage-count-label{ font-family: var(--mono); font-size:9px; text-transform:uppercase; letter-spacing:0.07em; opacity:.65; margin:2px 0 10px; }
 
-  .row-stack{ display:flex; flex-direction:column; gap:3px; max-height:210px; overflow-y:auto; }
+  .row-stack{ display:flex; flex-direction:column; gap:3px; max-height:210px; overflow-y:auto; overflow-x:hidden; padding:2px 7px 2px 2px; }
   .heat-row{
     display:flex; gap:2px; border-radius:5px; overflow:hidden; height:19px;
     transition: transform .25s ease, opacity .3s ease; position:relative;
@@ -159,10 +174,11 @@
   .more-note{ font-family: var(--mono); font-size:9px; opacity:.6; text-align:center; padding:3px; }
   .empty-note{ font-family: var(--mono); font-size:10.5px; opacity:.6; text-align:center; padding:8px; }
 
-  .group-stack{ position:relative; margin-bottom:9px; }
-  .group-ghost{ position:absolute; top:0; left:0; width:100%; height:19px; background:rgba(139,92,246,0.16); border:1px solid rgba(139,92,246,0.28); pointer-events:none; }
+  .stage-band[data-stage-key="group"]{ min-width:290px; max-width:310px; }
+  .group-stack{ position:relative; margin:2px 7px 10px 0; }
+  .group-ghost{ position:absolute; top:0; left:0; width:calc(100% - 7px); height:19px; background:rgba(139,92,246,0.16); border:1px solid rgba(139,92,246,0.28); pointer-events:none; }
   .group-badge{
-    position:absolute; top:-6px; right:-6px; background:var(--c-group); color:#fff;
+    position:absolute; top:-5px; right:1px; background:var(--c-group); color:#fff;
     font-family: var(--mono); font-size:8px; font-weight:700; padding:1px 5px; border-radius:8px;
     z-index:20; box-shadow:0 1px 3px rgba(0,0,0,0.25);
   }
@@ -267,7 +283,7 @@
   @media (max-width: 760px){
     .pipeline-inner{ flex-direction:column; }
     .ribbon-wrap{ width:100%; height:34px; }
-    .stage-band{ max-width:none; width:100%; }
+    .stage-band,.stage-band[data-stage-key="group"]{ min-width:0; max-width:none; width:100%; }
     .editor-row{ flex-direction:column; }
     .side-controls{ flex-direction:row; }
   }
@@ -305,6 +321,7 @@
         <button class="icon-btn" id="copyBtn">⧉ copy query</button>
       </div>
     </div>
+    <div class="token-strip" id="tokenStrip"></div>
     <div class="meta-row">
       <div class="status-msg" id="statusMsg">ready</div>
       <div class="legend">
@@ -327,6 +344,7 @@
     <div class="stage-crumbs" id="stageCrumbs"></div>
   </div>
   <div id="pipelineOuter"><div class="pipeline-inner" id="pipelineInner"></div></div>
+  <div id="finalChartHolder"></div>
   <div id="errorHolder"></div>
 </section>
 
@@ -614,6 +632,41 @@
   }
 
   /* ============================================================
+     TOKEN-CHIP STRIP — the SQL equivalent of the reference's
+     tokenized input sentence ("Data | visualization | em | powers...").
+     Every word of the query becomes a colored chip by lexical role.
+  ============================================================ */
+  const SQL_KEYWORDS = new Set(['SELECT','DISTINCT','FROM','WHERE','GROUP','BY','HAVING','ORDER','LIMIT','AS','AND','OR','NOT','JOIN','INNER','LEFT','RIGHT','OUTER','ON','IN','LIKE','IS','NULL','DESC','ASC']);
+
+  function tokenizeSql(raw){
+    const tokens = [];
+    const re = /'[^']*'|[\w.]+|!=|<>|>=|<=|[=<>(),;*+\-\/]/g;
+    let m;
+    while ((m = re.exec(raw)) !== null){
+      const t = m[0];
+      let type = 'other';
+      if (/^'.*'$/.test(t)) type = 'string';
+      else if (/^-?\d+(\.\d+)?$/.test(t)) type = 'number';
+      else if (SQL_KEYWORDS.has(t.toUpperCase())) type = 'keyword';
+      else if (/^[=<>!]+$/.test(t)) type = 'operator';
+      else if (/^[(),;*+\-\/]$/.test(t)) type = 'punct';
+      else type = 'column';
+      tokens.push({ text: t, type });
+    }
+    return tokens;
+  }
+
+  function renderTokenStrip(raw){
+    const strip = el('tokenStrip');
+    const tokens = tokenizeSql(raw);
+    let html = '<span class="tok-caption">query tokens:</span>';
+    tokens.forEach((t, i) => {
+      html += `<span class="tok-chip tok-${t.type}" style="animation-delay:${Math.min(i*18,400)}ms">${escapeHtml(t.text)}</span>`;
+    });
+    strip.innerHTML = html;
+  }
+
+  /* ============================================================
      LIVE THRESHOLD SLIDER — the SQL equivalent of the reference's
      temperature slider: drag a number, watch its effect on the
      actual row count ripple through in real time.
@@ -708,9 +761,10 @@
   function runPipeline(){
     const raw = el('queryInput').value;
     el('errorHolder').innerHTML = '';
+    renderTokenStrip(raw);
     let clauses;
     try{ clauses = parseClauses(raw); }
-    catch(err){ showError(err.message); renderStages([]); renderThresholdSlider(null, raw); return; }
+    catch(err){ showError(err.message); renderStages([]); renderThresholdSlider(null, raw); el('finalChartHolder').innerHTML=''; return; }
 
     renderThresholdSlider(clauses, raw);
 
@@ -811,10 +865,12 @@
 
       lastStages = stages;
       renderStages(stages, joinInfo);
+      renderFinalChart(stages);
       setStatus(`ok — final result: ${stages[stages.length-1].count} row${stages[stages.length-1].count===1?'':'s'}`, 'ok');
     } catch(err){
       showError(cleanSqlError(err.message));
       renderStages([]);
+      el('finalChartHolder').innerHTML = '';
     }
   }
 
@@ -874,6 +930,39 @@
   /* ============================================================
      RENDERING — stage bands + flowing ribbons
   ============================================================ */
+  /* ---------- final ranked bar chart (the "probabilities" payoff) ---------- */
+  function renderFinalChart(stages){
+    const holder = el('finalChartHolder');
+    const final = stages[stages.length - 1];
+    if (!final || !final.rows.length){ holder.innerHTML = ''; return; }
+
+    const cols = (final.columns || Object.keys(final.rows[0])).filter(c => c !== '__rid' && c !== '__members');
+    const numCol = cols.find(c => typeof final.rows[0][c] === 'number' && final.rows.some(r => typeof r[c] === 'number'));
+    if (!numCol){ holder.innerHTML = ''; return; }
+    const labelCol = cols.find(c => c !== numCol) || cols[0];
+
+    const rows = final.rows.filter(r => typeof r[numCol] === 'number').slice(0, 12);
+    if (rows.length < 2){ holder.innerHTML = ''; return; }
+    const maxVal = Math.max(...rows.map(r => Math.abs(r[numCol])));
+
+    let html = `<div class="final-chart"><div class="final-chart-title">final result, ranked by <b>${escapeHtml(numCol)}</b></div>`;
+    rows.forEach((r, i) => {
+      const pct = maxVal > 0 ? (Math.abs(r[numCol]) / maxVal) * 100 : 0;
+      html += `
+        <div class="bar-row">
+          <div class="bar-label">${escapeHtml(formatVal(r[labelCol]))}</div>
+          <div class="bar-track"><div class="bar-fill" style="width:0%;transition-delay:${i*60}ms;" data-pct="${pct}"></div></div>
+          <div class="bar-value">${formatVal(r[numCol])}</div>
+        </div>`;
+    });
+    html += '</div>';
+    holder.innerHTML = html;
+
+    requestAnimationFrame(() => {
+      document.querySelectorAll('.bar-fill').forEach(el => { el.style.width = el.dataset.pct + '%'; });
+    });
+  }
+
   function renderStages(stages, joinInfo){
     const container = el('pipelineInner');
     container.innerHTML = '';

@@ -1,5 +1,1074 @@
-<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SQL Query Explainer</title><meta name="description" content="See how SQL executes, clause by clause"><link rel="stylesheet" href="./src/style.css"><script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.13.0/sql-wasm.js"></script></head><body>
-<header><nav><span class="logo">SQL<span>FLOW</span></span><a href="#learn">How SQL executes ↓</a></nav><div class="hero"><p class="eyebrow">AN INTERACTIVE SQL VISUALIZER</p><h1>See what your query<br><em>actually</em> does.</h1><p>Type SQL. Watch rows move through the real execution pipeline.</p></div></header>
-<main><section class="lab"><div id="examples" class="examples"></div><div class="editor"><div class="dots">● ● ●</div><textarea id="query" spellcheck="false" aria-label="SQL query"></textarea><button id="copy" class="copy">Copy</button></div><div id="status" class="loading"><i></i> Initializing SQLite engine…</div><div id="legend" class="legend" hidden><span>● current</span><span class="pass">● passed</span><span class="fail">● filtered / excluded</span></div><div id="pipeline" class="pipeline"></div><div id="controls" class="controls" hidden><button id="back">← Step</button><button id="play" class="primary">Play</button><button id="next">Step →</button><label>Speed <input id="speed" type="range" min="200" max="1600" value="700"></label><span id="count"></span></div></section>
-<section id="learn" class="article"><p class="eyebrow">THE MENTAL MODEL</p><h2>SQL isn’t executed<br>in the order you write it.</h2><p class="lede">You write <code>SELECT</code> first, but the database begins at <code>FROM</code>. It builds a working set, transforms it clause by clause, and only then returns the result.</p><div class="order"><span>WRITTEN</span><b>SELECT → FROM → WHERE → GROUP BY → ORDER BY</b><span>EXECUTED</span><b>FROM → WHERE → GROUP BY → SELECT → ORDER BY</b></div><div id="lessons"></div></section></main><footer><b>Built with SQLite WASM + Svelte source + Vite</b><span>SQLite runs entirely in your browser. No query leaves your device.</span></footer><script>history.replaceState=(()=>{const r=history.replaceState.bind(history);return()=>r({},'',location.pathname)})()</script><script src="./src/browser-app.js"></script></body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SQL Query Explainer â€” see your query run</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0a0b0d;
+    --bg-2: #101216;
+    --panel: #14171c;
+    --panel-2: #191d23;
+    --line: #23272e;
+    --line-soft: #1a1e24;
+    --ink: #e8e9ea;
+    --ink-dim: #8b929c;
+    --ink-faint: #565c66;
+    --amber: #f5a623;
+    --amber-dim: #7a5719;
+    --green: #3ddc84;
+    --green-dim: #1c4a34;
+    --red: #ff5470;
+    --red-dim: #4a1c28;
+    --cyan: #5ee7ff;
+    --cyan-dim: #1a454d;
+    --violet: #b78dff;
+    --violet-dim: #362a52;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Manrope', sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    background-image:
+      radial-gradient(ellipse 900px 500px at 15% -10%, rgba(245,166,35,0.07), transparent 60%),
+      radial-gradient(ellipse 700px 500px at 100% 10%, rgba(94,231,255,0.05), transparent 60%),
+      repeating-linear-gradient(0deg, rgba(255,255,255,0.012) 0px, rgba(255,255,255,0.012) 1px, transparent 1px, transparent 42px),
+      repeating-linear-gradient(90deg, rgba(255,255,255,0.012) 0px, rgba(255,255,255,0.012) 1px, transparent 1px, transparent 42px);
+  }
+  ::selection{ background: var(--amber); color:#0a0b0d; }
+  ::-webkit-scrollbar{ width:10px; height:10px; }
+  ::-webkit-scrollbar-track{ background: var(--bg-2); }
+  ::-webkit-scrollbar-thumb{ background: var(--line); border-radius: 6px; }
+  ::-webkit-scrollbar-thumb:hover{ background: var(--ink-faint); }
 
+  a{ color: var(--amber); }
+
+  .topbar{
+    position: sticky; top:0; z-index: 50;
+    background: linear-gradient(180deg, rgba(10,11,13,0.98), rgba(10,11,13,0.94));
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+  }
+  .brand{
+    display:flex; align-items:center; gap:12px;
+    padding: 16px 28px 6px;
+  }
+  .brand .dot{ width:10px; height:10px; border-radius:50%; background: var(--amber); box-shadow: 0 0 12px var(--amber); flex:none; }
+  .brand h1{ font-family: var(--mono); font-size:15px; letter-spacing:0.06em; margin:0; text-transform:uppercase; font-weight:700; }
+  .brand span.sub{ font-family: var(--sans); color: var(--ink-dim); font-size:13px; margin-left:4px; }
+
+  .control-strip{ padding: 6px 28px 16px; }
+
+  .examples-row{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; }
+  .ex-btn{
+    font-family: var(--mono); font-size:11.5px; padding:6px 11px; border-radius:20px;
+    background: var(--panel); border:1px solid var(--line); color: var(--ink-dim);
+    cursor:pointer; transition: all .15s ease; white-space:nowrap;
+  }
+  .ex-btn:hover{ border-color: var(--amber); color: var(--amber); background: rgba(245,166,35,0.06); }
+  .ex-btn.active{ border-color: var(--amber); color: var(--amber); background: rgba(245,166,35,0.1); }
+
+  .editor-row{ display:flex; gap:10px; align-items:stretch; }
+  .editor-wrap{
+    flex:1; position:relative; background: var(--panel);
+    border:1px solid var(--line); border-radius:10px; overflow:hidden;
+    transition: border-color .2s ease;
+  }
+  .editor-wrap:focus-within{ border-color: var(--amber); box-shadow: 0 0 0 3px rgba(245,166,35,0.12); }
+  .editor-wrap::before{
+    content: 'SQLâ€º'; position:absolute; left:14px; top:50%; transform:translateY(-50%);
+    font-family: var(--mono); font-size:12px; color: var(--ink-faint); font-weight:700; pointer-events:none;
+  }
+  #queryInput{
+    width:100%; min-height:52px; max-height: 160px; resize:vertical;
+    background:transparent; border:none; outline:none; color: var(--ink);
+    font-family: var(--mono); font-size:14.5px; line-height:1.5;
+    padding:15px 16px 15px 56px;
+  }
+  .side-controls{ display:flex; flex-direction:column; gap:8px; flex:none; }
+  .icon-btn{
+    background: var(--panel); border:1px solid var(--line); color: var(--ink-dim);
+    border-radius:8px; padding:0 14px; font-family: var(--mono); font-size:12px;
+    cursor:pointer; height:100%; min-height:52px; transition: all .15s ease;
+    display:flex; align-items:center; gap:6px; white-space:nowrap;
+  }
+  .icon-btn:hover{ color: var(--ink); border-color: var(--ink-faint); }
+  .dataset-select{
+    background: var(--panel); border:1px solid var(--line); color: var(--ink-dim);
+    font-family: var(--mono); font-size:11.5px; border-radius:8px; padding:6px 10px; cursor:pointer;
+  }
+
+  .meta-row{ display:flex; justify-content:space-between; align-items:center; margin-top:10px; flex-wrap:wrap; gap:8px; }
+  .status-msg{ font-family: var(--mono); font-size:12px; color: var(--ink-faint); }
+  .status-msg.error{ color: var(--red); }
+  .status-msg.ok{ color: var(--green); }
+  .legend{ display:flex; gap:14px; flex-wrap:wrap; }
+  .legend-item{ display:flex; align-items:center; gap:5px; font-family: var(--mono); font-size:10.5px; color: var(--ink-faint); }
+  .legend-swatch{ width:9px; height:9px; border-radius:2px; flex:none; }
+
+  #loadingOverlay{
+    position:fixed; inset:0; background: var(--bg); z-index:200;
+    display:flex; align-items:center; justify-content:center; flex-direction:column; gap:14px;
+  }
+  .spinner{
+    width:38px; height:38px; border-radius:50%;
+    border: 3px solid var(--line); border-top-color: var(--amber);
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin{ to{ transform: rotate(360deg); } }
+  #loadingOverlay p{ font-family: var(--mono); font-size:12.5px; color: var(--ink-dim); }
+
+  .diagram-section{ padding: 20px 28px 26px; }
+  .playback-row{
+    display:flex; align-items:center; gap:14px; margin-bottom:16px;
+    background: var(--panel); border:1px solid var(--line); border-radius:10px; padding:10px 16px;
+  }
+  .pb-btn{
+    background: var(--panel-2); border:1px solid var(--line); color: var(--ink);
+    width:32px; height:32px; border-radius:7px; cursor:pointer; font-size:13px;
+    display:flex; align-items:center; justify-content:center; transition: all .15s ease; flex:none;
+  }
+  .pb-btn:hover{ border-color: var(--amber); color: var(--amber); }
+  .pb-btn.playing{ border-color: var(--green); color: var(--green); }
+  .speed-wrap{ display:flex; align-items:center; gap:8px; font-family: var(--mono); font-size:11px; color: var(--ink-dim); }
+  .speed-wrap input[type=range]{ width:90px; accent-color: var(--amber); }
+  .stage-crumbs{ display:flex; gap:4px; flex:1; overflow-x:auto; }
+  .crumb{
+    font-family: var(--mono); font-size:10.5px; padding:4px 9px; border-radius:14px;
+    background: var(--panel-2); color: var(--ink-faint); border:1px solid var(--line-soft);
+    white-space:nowrap; cursor:pointer; transition: all .15s ease;
+  }
+  .crumb.active{ color: var(--bg); background: var(--amber); border-color: var(--amber); font-weight:700; }
+  .crumb.done{ color: var(--ink-dim); border-color: var(--line); }
+
+  #pipeline{ width:100%; overflow-x:auto; padding-bottom:8px; }
+  .pipeline-inner{ display:flex; align-items:stretch; gap:0; min-width:max-content; }
+
+  .stage{
+    background: var(--panel); border:1px solid var(--line); border-radius:12px;
+    min-width:230px; max-width:250px; padding:14px 14px 12px; position:relative;
+    transition: opacity .3s ease, transform .3s ease, border-color .3s ease;
+  }
+  .stage.inactive{ opacity:0.25; filter: grayscale(1); }
+  .stage.current{ border-color: var(--amber); box-shadow: 0 0 0 1px var(--amber), 0 0 22px rgba(245,166,35,0.15); }
+  .stage-label{
+    font-family: var(--mono); font-size:10.5px; letter-spacing:0.08em; text-transform:uppercase;
+    font-weight:700; margin-bottom:2px; display:flex; align-items:center; gap:6px;
+  }
+  .stage-sub{ font-family: var(--mono); font-size:10px; color: var(--ink-faint); margin-bottom:10px; min-height:13px; }
+  .stage-count{
+    font-family: var(--mono); font-size:22px; font-weight:800; margin-bottom:2px;
+  }
+  .stage-count-label{ font-family: var(--mono); font-size:9.5px; color: var(--ink-faint); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:10px; }
+
+  .chip-well{
+    display:flex; flex-direction:column; gap:4px; max-height:190px; overflow-y:auto;
+    background: var(--bg-2); border-radius:8px; padding:6px; min-height: 40px;
+  }
+  .row-chip{
+    font-family: var(--mono); font-size:9.5px; padding:4px 7px; border-radius:5px;
+    background: var(--panel-2); border:1px solid var(--line-soft); color: var(--ink-dim);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; position:relative;
+    transition: all .3s cubic-bezier(.4,0,.2,1);
+  }
+  .row-chip.pass{ border-color: var(--green-dim); color: var(--green); background: rgba(61,220,132,0.06); }
+  .row-chip.fail{ border-color: var(--red-dim); color: var(--red-dim); background: rgba(255,84,112,0.04); text-decoration: line-through; opacity:0.55; }
+  .row-chip.scanning{ border-color: var(--amber); color: var(--amber); background: rgba(245,166,35,0.1); }
+  .row-chip.group-key{ border-color: var(--violet-dim); color: var(--violet); background: rgba(183,141,255,0.07); font-weight:700; }
+  .more-chip{ font-family: var(--mono); font-size:9.5px; color: var(--ink-faint); text-align:center; padding:3px; }
+
+  .discard-tray{
+    margin-top:8px; padding-top:8px; border-top: 1px dashed var(--line);
+    display:flex; flex-wrap:wrap; gap:3px; min-height:6px;
+  }
+  .discard-tray .row-chip{ font-size:8.5px; padding:2px 5px; }
+  .discard-label{ font-family: var(--mono); font-size:8.5px; color: var(--red-dim); margin-bottom:3px; }
+
+  .connector{
+    flex:none; width:46px; display:flex; align-items:center; justify-content:center; position:relative;
+  }
+  .connector svg{ width:100%; height:60px; overflow:visible; }
+  .flow-particle{ fill: var(--amber); }
+
+  .tooltip{
+    position:fixed; z-index:300; background: #1c2027; border:1px solid var(--line-soft);
+    border-radius:8px; padding:9px 12px; font-family: var(--mono); font-size:11px;
+    color: var(--ink); max-width:280px; pointer-events:none; box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    display:none; line-height:1.5;
+  }
+  .tooltip .t-cond{ color: var(--amber); }
+  .tooltip .t-pass{ color: var(--green); }
+  .tooltip .t-fail{ color: var(--red); }
+
+  .error-panel{
+    margin-top:14px; background: rgba(255,84,112,0.06); border:1px solid var(--red-dim);
+    border-radius:10px; padding:14px 16px; font-family: var(--mono); font-size:12.5px; color: #ffb3c1;
+  }
+  .error-panel b{ color: var(--red); display:block; margin-bottom:4px; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; }
+
+  .empty-note{
+    font-family: var(--mono); font-size:11px; color: var(--ink-faint); padding:12px;
+    text-align:center; border:1px dashed var(--line); border-radius:8px; margin-top:6px;
+  }
+
+  hr.divider{ border:none; border-top:1px solid var(--line); margin: 0 28px; }
+
+  article{ max-width: 760px; margin: 0 auto; padding: 56px 24px 100px; }
+  article h2{
+    font-family: var(--mono); font-size: 26px; margin: 0 0 18px; color: var(--ink);
+    border-left: 3px solid var(--amber); padding-left:14px;
+  }
+  article h3{
+    font-family: var(--mono); font-size:16px; color: var(--amber); margin: 40px 0 10px;
+    display:flex; align-items:center; gap:8px;
+  }
+  article h3 .stage-swatch{ width:10px; height:10px; border-radius:2px; }
+  article p{ color: var(--ink-dim); line-height:1.75; font-size:15px; margin: 0 0 16px; }
+  article code{ font-family: var(--mono); background: var(--panel); color: var(--cyan); padding:2px 6px; border-radius:4px; font-size:13px; }
+  article .callout{
+    background: var(--panel); border:1px solid var(--line); border-left:3px solid var(--cyan);
+    border-radius:8px; padding:14px 16px; margin:20px 0; color: var(--ink-dim); font-size:14px; line-height:1.7;
+  }
+  .built-with{ margin-top:50px; padding-top:24px; border-top:1px solid var(--line); font-size:13px; color: var(--ink-faint); }
+  .built-with code{ font-size:12px; }
+
+  @media (max-width: 720px){
+    .pipeline-inner{ flex-direction:column; }
+    .connector{ width:100%; height:30px; transform: rotate(90deg); }
+    .connector svg{ height:30px; }
+    .stage{ max-width:none; width:100%; }
+    .editor-row{ flex-direction:column; }
+    .side-controls{ flex-direction:row; }
+  }
+</style>
+</head>
+<body>
+
+<div id="loadingOverlay">
+  <div class="spinner"></div>
+  <p>booting sqlite (wasm)â€¦</p>
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="dot"></span>
+    <h1>SQL Query Explainer</h1>
+    <span class="sub">â€” watch your query run, clause by clause</span>
+  </div>
+  <div class="control-strip">
+    <div class="examples-row" id="examplesRow"></div>
+    <div class="editor-row">
+      <div class="editor-wrap">
+        <textarea id="queryInput" spellcheck="false" autocomplete="off"></textarea>
+      </div>
+      <div class="side-controls">
+        <select class="dataset-select" id="datasetSelect">
+          <option value="bank">bank_transactions + branches</option>
+          <option value="orders">orders + customers</option>
+        </select>
+        <button class="icon-btn" id="copyBtn">â§‰ copy</button>
+      </div>
+    </div>
+    <div class="meta-row">
+      <div class="status-msg" id="statusMsg">ready</div>
+      <div class="legend">
+        <div class="legend-item"><span class="legend-swatch" style="background:var(--amber)"></span>evaluating</div>
+        <div class="legend-item"><span class="legend-swatch" style="background:var(--green)"></span>passed</div>
+        <div class="legend-item"><span class="legend-swatch" style="background:var(--red)"></span>filtered out</div>
+        <div class="legend-item"><span class="legend-swatch" style="background:var(--violet)"></span>group key</div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section class="diagram-section">
+  <div class="playback-row">
+    <button class="pb-btn" id="playBtn" title="Play walkthrough">â–¶</button>
+    <button class="pb-btn" id="stepBackBtn" title="Step back">â®</button>
+    <button class="pb-btn" id="stepFwdBtn" title="Step forward">â­</button>
+    <div class="speed-wrap">
+      speed <input type="range" id="speedSlider" min="1" max="5" value="3">
+    </div>
+    <div class="stage-crumbs" id="stageCrumbs"></div>
+  </div>
+
+  <div id="pipeline"><div class="pipeline-inner" id="pipelineInner"></div></div>
+  <div id="errorHolder"></div>
+</section>
+
+<hr class="divider">
+
+<article>
+  <h2>What's actually happening when a query runs</h2>
+  <p>Write a query with <code>SELECT</code> at the top and <code>WHERE</code> in the middle â€” but that's not the order SQLite (or any SQL engine) actually executes it in. The engine works through clauses in a fixed logical sequence, rebuilding and shrinking the row set at every step. The diagram above runs your exact query through <a href="https://sql.js.org" target="_blank" rel="noopener">sql.js</a> â€” real SQLite compiled to WebAssembly â€” and shows you the true intermediate result after each stage, not a scripted animation.</p>
+
+  <div class="callout">Try editing the query above. The pipeline re-executes live: every row count, every discarded row, every re-sorted chip reflects an actual query sql.js just ran against the in-browser database â€” nothing here is hand-authored per example.</div>
+
+  <h3><span class="stage-swatch" style="background:var(--ink-dim)"></span>FROM &amp; JOIN</h3>
+  <p>Execution starts here, not at <code>SELECT</code>. The engine loads the base table(s) and, if a <code>JOIN</code> is present, matches rows between tables on the join condition before anything else happens. This is why a query can reference a joined table's column in its <code>WHERE</code> clause â€” by the time filtering starts, the join has already produced one combined row set.</p>
+
+  <h3><span class="stage-swatch" style="background:var(--amber)"></span>WHERE</h3>
+  <p>Every row from the FROM/JOIN stage is tested against the condition one at a time. Rows that evaluate true continue forward; rows that evaluate false are discarded immediately â€” permanently, for the rest of this query. Aggregate functions can't appear in <code>WHERE</code> for exactly this reason: aggregates don't exist yet at this point in execution.</p>
+
+  <h3><span class="stage-swatch" style="background:var(--violet)"></span>GROUP BY</h3>
+  <p>Surviving rows are bucketed into groups that share the same value(s) in the <code>GROUP BY</code> column(s). Once grouped, individual rows stop being individually addressable â€” anything downstream operates on the group as a unit, which is why <code>SELECT</code> can only reference grouped columns or aggregate functions like <code>COUNT()</code>, <code>SUM()</code>, or <code>AVG()</code> from here on.</p>
+
+  <h3><span class="stage-swatch" style="background:var(--amber)"></span>HAVING</h3>
+  <p><code>HAVING</code> is <code>WHERE</code>'s counterpart for groups instead of rows â€” it filters out entire groups based on a condition, commonly one involving an aggregate (e.g. <code>HAVING COUNT(*) > 3</code>). This is the reason <code>HAVING</code> can filter on aggregates when <code>WHERE</code> cannot: groups (and their aggregate values) don't exist until after <code>GROUP BY</code> has run.</p>
+
+  <h3><span class="stage-swatch" style="background:var(--cyan)"></span>SELECT &amp; DISTINCT</h3>
+  <p>Only now does the engine evaluate the <code>SELECT</code> list â€” projecting down to the specific columns or expressions you asked for, discarding everything else. If <code>DISTINCT</code> is present, duplicate resulting rows are collapsed into one at this same stage.</p>
+
+  <h3><span class="stage-swatch" style="background:var(--cyan)"></span>ORDER BY</h3>
+  <p>With the final row shape decided, the engine sorts the result set. This runs after <code>SELECT</code>, which is why you can <code>ORDER BY</code> a column alias that was only just defined in the <code>SELECT</code> list.</p>
+
+  <h3><span class="stage-swatch" style="background:var(--red)"></span>LIMIT / OFFSET</h3>
+  <p>Finally, the engine trims the sorted result down to the requested window of rows. Because this is the very last step, <code>LIMIT</code> always applies to the final, filtered, grouped, sorted output â€” never to any intermediate stage.</p>
+
+  <div class="built-with">
+    Built with real client-side SQL execution via <code>sql.js</code> (SQLite â†’ WebAssembly) and hand-rolled DOM/CSS transitions driven off actual intermediate query results â€” no server, no fake data.
+  </div>
+</article>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.js"></script>
+<script>
+(function(){
+
+  /* ---------------------------------------------------------
+     SAMPLE DATASETS
+  --------------------------------------------------------- */
+  const DATASETS = {
+    bank: {
+      setup: `
+        CREATE TABLE branches (
+          branch_id INTEGER PRIMARY KEY,
+          branch_name TEXT,
+          city TEXT
+        );
+        INSERT INTO branches VALUES
+          (1,'Downtown Toronto','Toronto'),
+          (2,'Calgary Centre','Calgary'),
+          (3,'Vancouver West','Vancouver'),
+          (4,'Ottawa Main','Ottawa');
+
+        CREATE TABLE bank_transactions (
+          id INTEGER PRIMARY KEY,
+          account_holder TEXT,
+          amount REAL,
+          status TEXT,
+          branch_id INTEGER,
+          txn_time TEXT
+        );
+        INSERT INTO bank_transactions VALUES
+          (1,'A. Reyes',   1250.00,'cleared',   1,'2026-07-01 09:14'),
+          (2,'M. Chen',    9800.50,'flagged',   1,'2026-07-01 09:22'),
+          (3,'J. Okafor',   450.00,'cleared',   2,'2026-07-01 10:03'),
+          (4,'S. Patel',  15200.00,'flagged',   2,'2026-07-01 10:47'),
+          (5,'L. Nguyen',   NULL,  'pending',   3,'2026-07-01 11:02'),
+          (6,'R. Dubois',  3200.75,'cleared',   3,'2026-07-01 11:35'),
+          (7,'A. Reyes',   8100.00,'flagged',   1,'2026-07-01 12:10'),
+          (8,'K. Osei',     220.00,'cleared',   4,'2026-07-01 12:44'),
+          (9,'M. Chen',    1000.00,'cleared',   1,'2026-07-01 13:15'),
+          (10,'T. Kowalski',12500.00,'flagged', 2,'2026-07-01 13:52'),
+          (11,'J. Okafor',  675.25,'cleared',   2,'2026-07-01 14:20'),
+          (12,'S. Patel',   310.00,'cleared',   2,'2026-07-01 14:58'),
+          (13,'R. Dubois', 21000.00,'flagged',  3,'2026-07-01 15:30'),
+          (14,'K. Osei',   4400.00,'cleared',   4,'2026-07-01 16:02'),
+          (15,'L. Nguyen', 1875.50,'cleared',   3,'2026-07-01 16:40'),
+          (16,'A. Reyes',    95.00, 'cleared',  1,'2026-07-01 17:05'),
+          (17,'T. Kowalski', 500.00,'pending',  2,'2026-07-01 17:41'),
+          (18,'M. Chen',  17600.00,'flagged',   1,'2026-07-01 18:12');
+      `,
+      defaultQuery: "SELECT account_holder, amount, status\nFROM bank_transactions\nWHERE amount > 1000\nORDER BY amount DESC\nLIMIT 5;",
+      examples: [
+        { label: 'plain select', sql: 'SELECT * FROM bank_transactions;' },
+        { label: 'where filter', sql: 'SELECT account_holder, amount, status\nFROM bank_transactions\nWHERE status = \'flagged\';' },
+        { label: 'join', sql: 'SELECT bank_transactions.account_holder, bank_transactions.amount, branches.city\nFROM bank_transactions\nJOIN branches ON bank_transactions.branch_id = branches.branch_id\nWHERE branches.city = \'Toronto\';' },
+        { label: 'group + aggregate', sql: 'SELECT status, COUNT(*) AS n, SUM(amount) AS total\nFROM bank_transactions\nGROUP BY status;' },
+        { label: 'having', sql: 'SELECT account_holder, COUNT(*) AS n_txns, SUM(amount) AS total\nFROM bank_transactions\nGROUP BY account_holder\nHAVING COUNT(*) > 2;' },
+        { label: 'distinct', sql: 'SELECT DISTINCT status FROM bank_transactions;' },
+        { label: 'order + limit', sql: 'SELECT account_holder, amount\nFROM bank_transactions\nORDER BY amount DESC\nLIMIT 5;' },
+        { label: 'everything', sql: 'SELECT account_holder, COUNT(*) AS n_txns, SUM(amount) AS total\nFROM bank_transactions\nWHERE status != \'pending\'\nGROUP BY account_holder\nHAVING SUM(amount) > 1000\nORDER BY total DESC\nLIMIT 4;' }
+      ]
+    },
+    orders: {
+      setup: `
+        CREATE TABLE customers (
+          customer_id INTEGER PRIMARY KEY,
+          name TEXT,
+          region TEXT
+        );
+        INSERT INTO customers VALUES
+          (1,'Aster Co','West'),
+          (2,'Birchline','East'),
+          (3,'Cedar & Fir','West'),
+          (4,'Driftwood Ltd','North');
+
+        CREATE TABLE orders (
+          order_id INTEGER PRIMARY KEY,
+          customer_id INTEGER,
+          item TEXT,
+          quantity INTEGER,
+          price REAL,
+          order_status TEXT
+        );
+        INSERT INTO orders VALUES
+          (1,1,'Widget A',4,25.00,'shipped'),
+          (2,2,'Widget B',1,120.00,'pending'),
+          (3,1,'Widget C',10,8.50,'shipped'),
+          (4,3,'Widget A',2,25.00,'cancelled'),
+          (5,4,'Widget D',5,60.00,'shipped'),
+          (6,2,'Widget A',3,25.00,'shipped'),
+          (7,3,'Widget B',1,120.00,'shipped'),
+          (8,1,'Widget D',7,60.00,'pending'),
+          (9,4,'Widget C',2,8.50,'cancelled'),
+          (10,2,'Widget D',1,60.00,'shipped');
+      `,
+      defaultQuery: "SELECT item, SUM(quantity) AS total_qty\nFROM orders\nWHERE order_status = 'shipped'\nGROUP BY item\nORDER BY total_qty DESC;",
+      examples: [
+        { label: 'plain select', sql: 'SELECT * FROM orders;' },
+        { label: 'where filter', sql: "SELECT item, quantity, price FROM orders WHERE order_status = 'shipped';" },
+        { label: 'join', sql: 'SELECT customers.name, orders.item, orders.quantity\nFROM orders\nJOIN customers ON orders.customer_id = customers.customer_id\nWHERE customers.region = \'West\';' },
+        { label: 'group + aggregate', sql: 'SELECT item, COUNT(*) AS n_orders, SUM(quantity*price) AS revenue\nFROM orders\nGROUP BY item;' },
+        { label: 'having', sql: 'SELECT customer_id, SUM(quantity*price) AS spend\nFROM orders\nGROUP BY customer_id\nHAVING SUM(quantity*price) > 200;' },
+        { label: 'distinct', sql: 'SELECT DISTINCT order_status FROM orders;' },
+        { label: 'order + limit', sql: 'SELECT item, quantity*price AS line_total\nFROM orders\nORDER BY line_total DESC\nLIMIT 5;' },
+        { label: 'everything', sql: "SELECT item, COUNT(*) AS n, SUM(quantity*price) AS revenue\nFROM orders\nWHERE order_status != 'cancelled'\nGROUP BY item\nHAVING SUM(quantity*price) > 50\nORDER BY revenue DESC\nLIMIT 3;" }
+      ]
+    }
+  };
+
+  const STAGE_DEFS = [
+    { key:'from',    label:'FROM / JOIN', color:'var(--ink-dim)' },
+    { key:'where',   label:'WHERE',       color:'var(--amber)' },
+    { key:'group',   label:'GROUP BY',    color:'var(--violet)' },
+    { key:'having',  label:'HAVING',      color:'var(--amber)' },
+    { key:'select',  label:'SELECT',      color:'var(--cyan)' },
+    { key:'distinct',label:'DISTINCT',    color:'var(--cyan)' },
+    { key:'orderby', label:'ORDER BY',    color:'var(--cyan)' },
+    { key:'limit',   label:'LIMIT',       color:'var(--red)' },
+  ];
+
+  let SQL = null;
+  let db = null;
+  let currentDataset = 'bank';
+  let debounceTimer = null;
+  let stepMode = { active:false, index:-1, timer:null, playing:false };
+  let lastStages = [];
+
+  const el = (id) => document.getElementById(id);
+
+  /* ---------------------------------------------------------
+     DB INIT
+  --------------------------------------------------------- */
+  initSqlJs({ locateFile: f => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/${f}` })
+    .then(SQLlib => {
+      SQL = SQLlib;
+      loadDataset(currentDataset);
+      el('loadingOverlay').style.display = 'none';
+      buildExamples();
+      el('queryInput').value = DATASETS[currentDataset].defaultQuery;
+      runPipeline();
+    })
+    .catch(err => {
+      el('loadingOverlay').innerHTML = '<p style="color:#ff5470">Could not load sql.js â€” check your network settings / allowed domains.</p>';
+      console.error(err);
+    });
+
+  function loadDataset(name){
+    if (db) db.close();
+    db = new SQL.Database();
+    db.run(DATASETS[name].setup);
+  }
+
+  el('datasetSelect').addEventListener('change', (e) => {
+    currentDataset = e.target.value;
+    loadDataset(currentDataset);
+    el('queryInput').value = DATASETS[currentDataset].defaultQuery;
+    buildExamples();
+    runPipeline();
+  });
+
+  /* ---------------------------------------------------------
+     EXAMPLES
+  --------------------------------------------------------- */
+  function buildExamples(){
+    const row = el('examplesRow');
+    row.innerHTML = '';
+    DATASETS[currentDataset].examples.forEach(ex => {
+      const b = document.createElement('button');
+      b.className = 'ex-btn';
+      b.textContent = ex.label;
+      b.addEventListener('click', () => {
+        el('queryInput').value = ex.sql;
+        [...row.children].forEach(c => c.classList.remove('active'));
+        b.classList.add('active');
+        updateUrlHash(ex.sql);
+        runPipeline();
+      });
+      row.appendChild(b);
+    });
+  }
+
+  /* ---------------------------------------------------------
+     QUERY INPUT
+  --------------------------------------------------------- */
+  el('queryInput').addEventListener('input', () => {
+    [...el('examplesRow').children].forEach(c => c.classList.remove('active'));
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      updateUrlHash(el('queryInput').value);
+      runPipeline();
+    }, 420);
+  });
+
+  el('copyBtn').addEventListener('click', () => {
+    navigator.clipboard.writeText(el('queryInput').value).then(() => {
+      const b = el('copyBtn');
+      const orig = b.textContent;
+      b.textContent = 'âœ“ copied';
+      setTimeout(() => b.textContent = orig, 1200);
+    });
+  });
+
+  function updateUrlHash(sql){
+    try{ history.replaceState(null, '', '#q=' + encodeURIComponent(sql)); } catch(e){}
+  }
+
+  // load from hash on boot if present
+  (function initFromHash(){
+    const m = location.hash.match(/q=([^&]+)/);
+    if (m){
+      try{ DATASETS.bank.defaultQuery = decodeURIComponent(m[1]); } catch(e){}
+    }
+  })();
+
+  /* ---------------------------------------------------------
+     CLAUSE SPLITTER
+     Splits a single SELECT statement into its raw clause
+     fragments, respecting parenthesis depth and quoted strings,
+     so keywords inside subqueries/strings don't get matched.
+  --------------------------------------------------------- */
+  const CLAUSE_KEYWORDS = ['FROM','WHERE','GROUP BY','HAVING','ORDER BY','LIMIT'];
+
+  function findTopLevelKeywordPositions(sql){
+    const upper = sql.toUpperCase();
+    let depth = 0, inStr = false, strChar = '';
+    const positions = [];
+    for (let i = 0; i < sql.length; i++){
+      const c = sql[i];
+      if (inStr){
+        if (c === strChar) inStr = false;
+        continue;
+      }
+      if (c === "'" || c === '"'){ inStr = true; strChar = c; continue; }
+      if (c === '(') { depth++; continue; }
+      if (c === ')') { depth--; continue; }
+      if (depth !== 0) continue;
+      for (const kw of CLAUSE_KEYWORDS){
+        const len = kw.length;
+        if (upper.substr(i, len) === kw){
+          const before = i === 0 ? ' ' : sql[i-1];
+          const after = sql[i+len] === undefined ? ' ' : sql[i+len];
+          const isWordBoundaryBefore = /\s|^/.test(before);
+          const isWordBoundaryAfter = /\s|$/.test(after);
+          if (isWordBoundaryBefore && isWordBoundaryAfter){
+            positions.push({ kw, index: i });
+          }
+        }
+      }
+    }
+    return positions;
+  }
+
+  function parseClauses(sqlRaw){
+    let sql = sqlRaw.trim().replace(/;+\s*$/,'');
+    const upper = sql.toUpperCase();
+    if (!upper.startsWith('SELECT')){
+      throw new Error("Only SELECT queries are visualized. Your query should start with SELECT.");
+    }
+    const positions = findTopLevelKeywordPositions(sql)
+      .sort((a,b) => a.index - b.index);
+
+    const fromPos = positions.find(p => p.kw === 'FROM');
+    if (!fromPos) throw new Error("Couldn't find a FROM clause.");
+
+    let selectList = sql.slice(6, fromPos.index).trim();
+    let distinct = false;
+    if (/^DISTINCT\b/i.test(selectList)){
+      distinct = true;
+      selectList = selectList.replace(/^DISTINCT\s*/i, '').trim();
+    }
+
+    // ordered clause boundaries after FROM
+    const order = ['WHERE','GROUP BY','HAVING','ORDER BY','LIMIT'];
+    const found = {};
+    order.forEach(kw => {
+      found[kw] = positions.find(p => p.kw === kw) || null;
+    });
+
+    const boundariesInOrder = [fromPos, ...order.map(k => found[k]).filter(Boolean)]
+      .sort((a,b) => a.index - b.index);
+
+    function sliceBetween(startPos){
+      const idx = boundariesInOrder.findIndex(p => p === startPos);
+      const next = boundariesInOrder[idx+1];
+      const startTextIdx = startPos.index + startPos.kw.length;
+      const endTextIdx = next ? next.index : sql.length;
+      return sql.slice(startTextIdx, endTextIdx).trim();
+    }
+
+    const clauses = {
+      selectList,
+      distinct,
+      from: sliceBetween(fromPos),
+      where: found['WHERE'] ? sliceBetween(found['WHERE']) : null,
+      groupBy: found['GROUP BY'] ? sliceBetween(found['GROUP BY']) : null,
+      having: found['HAVING'] ? sliceBetween(found['HAVING']) : null,
+      orderBy: found['ORDER BY'] ? sliceBetween(found['ORDER BY']) : null,
+      limit: found['LIMIT'] ? sliceBetween(found['LIMIT']) : null,
+    };
+    if (!clauses.from) throw new Error("FROM clause is empty.");
+    return clauses;
+  }
+
+  /* ---------------------------------------------------------
+     EXECUTION HELPERS
+  --------------------------------------------------------- */
+  function exec(sql){
+    const res = db.exec(sql);
+    if (!res || !res.length) return { columns: [], rows: [] };
+    return { columns: res[0].columns, rows: res[0].values };
+  }
+
+  function rowsToObjects(cols, rows){
+    return rows.map(r => {
+      const o = {};
+      cols.forEach((c,i) => o[c] = r[i]);
+      return o;
+    });
+  }
+
+  /* ---------------------------------------------------------
+     BUILD & RUN CUMULATIVE PIPELINE QUERIES
+     Every stage is a REAL query run through sql.js.
+  --------------------------------------------------------- */
+  function runPipeline(){
+    const raw = el('queryInput').value;
+    el('errorHolder').innerHTML = '';
+    let clauses;
+    try{
+      clauses = parseClauses(raw);
+    } catch(err){
+      showError(err.message);
+      renderStages([]);
+      return;
+    }
+
+    const stages = [];
+    try{
+      // --- FROM/JOIN stage: raw joined rows, tagged with a stable row id.
+      // NOTE: this is a flat, single-scope query (no nested subquery) so that
+      // qualified column references like `branches.city` in later clauses
+      // keep resolving correctly â€” wrapping this in `FROM (SELECT * FROM ...)`
+      // would strip table qualifiers and break JOIN queries.
+      const fromSQL = `SELECT *, ROW_NUMBER() OVER () AS __rid FROM ${clauses.from}`;
+      const fromRes = exec(fromSQL);
+      const fromRows = rowsToObjects(fromRes.columns, fromRes.rows);
+      stages.push({ key:'from', rows: fromRows, columns: fromRes.columns, count: fromRows.length });
+
+      // --- WHERE stage: evaluate the condition per-row in the SAME flat
+      // scope as FROM/JOIN (again, no subquery wrapping) so qualified
+      // columns resolve, then split rows into pass/fail by rid.
+      if (clauses.where){
+        const passSQL = `SELECT *, ROW_NUMBER() OVER () AS __rid, (CASE WHEN (${clauses.where}) THEN 1 ELSE 0 END) AS __pass FROM ${clauses.from}`;
+        const passRes = exec(passSQL);
+        const passObjs = rowsToObjects(passRes.columns, passRes.rows);
+        const passingRids = new Set(passObjs.filter(o => o.__pass === 1).map(o => o.__rid));
+        const failRows = fromRows.filter(r => !passingRids.has(r.__rid));
+        const passRows = fromRows.filter(r => passingRids.has(r.__rid));
+        stages.push({ key:'where', rows: passRows, discarded: failRows, columns: fromRes.columns, count: passRows.length, condition: clauses.where });
+      }
+
+      // --- GROUP BY stage (pre-HAVING)
+      if (clauses.groupBy){
+        const realPreHaving = `SELECT ${clauses.selectList} FROM ${clauses.from} ${clauses.where ? 'WHERE ' + clauses.where : ''} GROUP BY ${clauses.groupBy}`;
+        const groupRes = exec(realPreHaving);
+        const groupRows = rowsToObjects(groupRes.columns, groupRes.rows);
+        stages.push({ key:'group', rows: groupRows, columns: groupRes.columns, count: groupRows.length, groupKey: clauses.groupBy });
+      }
+
+      // --- HAVING stage
+      if (clauses.having){
+        const base = clauses.groupBy
+          ? `SELECT ${clauses.selectList} FROM ${clauses.from} ${clauses.where ? 'WHERE ' + clauses.where : ''} GROUP BY ${clauses.groupBy}`
+          : `SELECT ${clauses.selectList} FROM ${clauses.from} ${clauses.where ? 'WHERE ' + clauses.where : ''}`;
+        const havingSQL = `${base} HAVING ${clauses.having}`;
+        const havingRes = exec(havingSQL);
+        const havingRows = rowsToObjects(havingRes.columns, havingRes.rows);
+        const priorGroupRows = stages.find(s => s.key === 'group')?.rows || [];
+        const havingKeySet = new Set(havingRows.map(r => JSON.stringify(r)));
+        const discarded = priorGroupRows.filter(r => !havingKeySet.has(JSON.stringify(r)));
+        stages.push({ key:'having', rows: havingRows, discarded, columns: havingRes.columns, count: havingRows.length, condition: clauses.having });
+      }
+
+      // --- SELECT (projection) stage â€” full select+from+where+group+having, no order/limit
+      let selectBase = `SELECT ${clauses.selectList} FROM ${clauses.from}`;
+      if (clauses.where) selectBase += ` WHERE ${clauses.where}`;
+      if (clauses.groupBy) selectBase += ` GROUP BY ${clauses.groupBy}`;
+      if (clauses.having) selectBase += ` HAVING ${clauses.having}`;
+      const selectRes = exec(selectBase);
+      const selectRows = rowsToObjects(selectRes.columns, selectRes.rows);
+      stages.push({ key:'select', rows: selectRows, columns: selectRes.columns, count: selectRows.length });
+
+      // --- DISTINCT stage
+      if (clauses.distinct){
+        const distinctSQL = selectBase.replace(/^SELECT/i, 'SELECT DISTINCT');
+        const distinctRes = exec(distinctSQL);
+        const distinctRows = rowsToObjects(distinctRes.columns, distinctRes.rows);
+        stages.push({ key:'distinct', rows: distinctRows, columns: distinctRes.columns, count: distinctRows.length, dedupedFrom: selectRows.length });
+      }
+
+      // --- ORDER BY stage
+      let orderBase = clauses.distinct ? selectBase.replace(/^SELECT/i, 'SELECT DISTINCT') : selectBase;
+      if (clauses.orderBy){
+        const orderSQL = `${orderBase} ORDER BY ${clauses.orderBy}`;
+        const orderRes = exec(orderSQL);
+        const orderRows = rowsToObjects(orderRes.columns, orderRes.rows);
+        stages.push({ key:'orderby', rows: orderRows, columns: orderRes.columns, count: orderRows.length, orderExpr: clauses.orderBy });
+      }
+
+      // --- LIMIT stage (final)
+      if (clauses.limit){
+        let finalSQL = orderBase;
+        if (clauses.orderBy) finalSQL += ` ORDER BY ${clauses.orderBy}`;
+        finalSQL += ` LIMIT ${clauses.limit}`;
+        const limitRes = exec(finalSQL);
+        const limitRows = rowsToObjects(limitRes.columns, limitRes.rows);
+        const priorRows = (clauses.orderBy ? stages.find(s=>s.key==='orderby').rows : (clauses.distinct ? stages.find(s=>s.key==='distinct').rows : selectRows));
+        stages.push({ key:'limit', rows: limitRows, columns: limitRes.columns, count: limitRows.length, cutFrom: priorRows.length, limitExpr: clauses.limit });
+      }
+
+      lastStages = stages;
+      renderStages(stages);
+      setStatus(`ok â€” final result: ${stages[stages.length-1].count} row${stages[stages.length-1].count===1?'':'s'}`, 'ok');
+    } catch(err){
+      showError(cleanSqlError(err.message));
+      renderStages([]);
+    }
+  }
+
+  function cleanSqlError(msg){
+    return msg.replace(/^Error:\s*/,'');
+  }
+
+  function showError(msg){
+    setStatus('error', 'error');
+    el('errorHolder').innerHTML = `<div class="error-panel"><b>Couldn't run this query</b>${escapeHtml(msg)}</div>`;
+  }
+
+  function setStatus(msg, cls){
+    const s = el('statusMsg');
+    s.textContent = msg;
+    s.className = 'status-msg' + (cls ? ' ' + cls : '');
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  /* ---------------------------------------------------------
+     RENDERING
+  --------------------------------------------------------- */
+  function formatVal(v){
+    if (v === null || v === undefined) return 'NULL';
+    if (typeof v === 'number') return Number.isInteger(v) ? String(v) : v.toFixed(2);
+    return String(v);
+  }
+
+  function rowPreview(row, cols, maxCols){
+    const use = cols.filter(c => c !== '__rid').slice(0, maxCols || 3);
+    return use.map(c => formatVal(row[c])).join(' Â· ');
+  }
+
+  function renderStages(stages){
+    const container = el('pipelineInner');
+    container.innerHTML = '';
+    const crumbHolder = el('stageCrumbs');
+    crumbHolder.innerHTML = '';
+
+    if (!stages.length){
+      container.innerHTML = '<div class="empty-note">Fix the query above to see the pipeline.</div>';
+      return;
+    }
+
+    const activeKeys = stages.map(s => s.key);
+
+    STAGE_DEFS.forEach((def, i) => {
+      const present = activeKeys.includes(def.key);
+      const stageData = stages.find(s => s.key === def.key);
+      const isLast = i === STAGE_DEFS.length - 1;
+
+      // connector before every stage except the very first present one
+      if (present && container.children.length > 0){
+        container.appendChild(makeConnector());
+      }
+
+      if (!present) return;
+
+      const box = document.createElement('div');
+      box.className = 'stage';
+      box.dataset.stageKey = def.key;
+
+      const labelRow = document.createElement('div');
+      labelRow.className = 'stage-label';
+      labelRow.style.color = def.color;
+      labelRow.innerHTML = `<span style="width:8px;height:8px;border-radius:2px;background:${def.color};display:inline-block;"></span>${def.label}`;
+      box.appendChild(labelRow);
+
+      const sub = document.createElement('div');
+      sub.className = 'stage-sub';
+      sub.textContent = stageSubtext(stageData);
+      box.appendChild(sub);
+
+      const count = document.createElement('div');
+      count.className = 'stage-count';
+      count.style.color = def.color;
+      count.textContent = stageData.count;
+      box.appendChild(count);
+
+      const countLabel = document.createElement('div');
+      countLabel.className = 'stage-count-label';
+      countLabel.textContent = def.key === 'group' ? 'groups' : 'rows';
+      box.appendChild(countLabel);
+
+      const well = document.createElement('div');
+      well.className = 'chip-well';
+      renderChips(well, stageData, def);
+      box.appendChild(well);
+
+      if (stageData.discarded && stageData.discarded.length){
+        const tray = document.createElement('div');
+        tray.className = 'discard-tray';
+        const dlabel = document.createElement('div');
+        dlabel.className = 'discard-label';
+        dlabel.textContent = `${stageData.discarded.length} discarded â†“`;
+        tray.appendChild(dlabel);
+        stageData.discarded.slice(0, 8).forEach(r => {
+          const chip = document.createElement('div');
+          chip.className = 'row-chip fail';
+          chip.textContent = rowPreview(r, stageData.columns || Object.keys(r), 2);
+          attachTooltip(chip, () => tooltipForRow(r, stageData, false));
+          tray.appendChild(chip);
+        });
+        box.appendChild(tray);
+      }
+
+      container.appendChild(box);
+
+      // crumb
+      const crumb = document.createElement('div');
+      crumb.className = 'crumb done';
+      crumb.textContent = def.label;
+      crumb.addEventListener('click', () => scrollStageIntoView(def.key));
+      crumbHolder.appendChild(crumb);
+    });
+  }
+
+  function stageSubtext(stageData){
+    switch(stageData.key){
+      case 'from': return 'raw rows before filtering';
+      case 'where': return `condition: ${truncate(stageData.condition, 34)}`;
+      case 'group': return `grouped by ${truncate(stageData.groupKey, 30)}`;
+      case 'having': return `condition: ${truncate(stageData.condition, 34)}`;
+      case 'select': return 'projected columns';
+      case 'distinct': return `deduped from ${stageData.dedupedFrom}`;
+      case 'orderby': return `sorted by ${truncate(stageData.orderExpr, 30)}`;
+      case 'limit': return `cut from ${stageData.cutFrom} â†’ ${stageData.limitExpr}`;
+      default: return '';
+    }
+  }
+
+  function truncate(s, n){
+    if (!s) return '';
+    return s.length > n ? s.slice(0,n-1) + 'â€¦' : s;
+  }
+
+  function renderChips(well, stageData, def){
+    const cols = stageData.columns || (stageData.rows[0] ? Object.keys(stageData.rows[0]) : []);
+    const maxShow = 12;
+    const rowsToShow = stageData.rows.slice(0, maxShow);
+    rowsToShow.forEach(r => {
+      const chip = document.createElement('div');
+      let cls = 'row-chip';
+      if (def.key === 'group') cls += ' group-key';
+      if ((def.key === 'where' || def.key === 'having')) cls += ' pass';
+      chip.className = cls;
+      chip.textContent = rowPreview(r, cols, def.key === 'group' ? 4 : 3);
+      attachTooltip(chip, () => tooltipForRow(r, stageData, true));
+      well.appendChild(chip);
+    });
+    if (stageData.rows.length > maxShow){
+      const more = document.createElement('div');
+      more.className = 'more-chip';
+      more.textContent = `+ ${stageData.rows.length - maxShow} more row${stageData.rows.length-maxShow===1?'':'s'}`;
+      well.appendChild(more);
+    }
+    if (!stageData.rows.length){
+      const empty = document.createElement('div');
+      empty.className = 'more-chip';
+      empty.textContent = '0 rows â€” pipeline ends here';
+      well.appendChild(empty);
+    }
+  }
+
+  function tooltipForRow(row, stageData, passed){
+    const cols = stageData.columns || Object.keys(row);
+    let lines = cols.filter(c => c !== '__rid').map(c => `${c}: ${formatVal(row[c])}`).join('<br>');
+    if (stageData.condition){
+      const cls = passed ? 't-pass' : 't-fail';
+      const verdict = passed ? 'âœ“ passes' : 'âœ— fails';
+      lines += `<br><br><span class="t-cond">${escapeHtml(stageData.condition)}</span><br><span class="${cls}">${verdict}</span>`;
+    }
+    return lines;
+  }
+
+  function attachTooltip(node, contentFn){
+    const tip = el('tooltip');
+    node.addEventListener('mouseenter', (e) => {
+      tip.innerHTML = contentFn();
+      tip.style.display = 'block';
+      positionTooltip(e);
+    });
+    node.addEventListener('mousemove', positionTooltip);
+    node.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
+  }
+
+  function positionTooltip(e){
+    const tip = el('tooltip');
+    const x = Math.min(e.clientX + 16, window.innerWidth - 300);
+    const y = Math.min(e.clientY + 16, window.innerHeight - 120);
+    tip.style.left = x + 'px';
+    tip.style.top = y + 'px';
+  }
+
+  function makeConnector(){
+    const wrap = document.createElement('div');
+    wrap.className = 'connector';
+    wrap.innerHTML = `
+      <svg viewBox="0 0 46 60">
+        <line x1="0" y1="30" x2="46" y2="30" stroke="var(--line)" stroke-width="2"/>
+        <circle class="flow-particle p1" cx="8" cy="30" r="2.5"/>
+        <circle class="flow-particle p2" cx="8" cy="30" r="2.5"/>
+      </svg>`;
+    // simple CSS-driven flow animation via JS-updated cx
+    const p1 = wrap.querySelector('.p1');
+    const p2 = wrap.querySelector('.p2');
+    let t1 = 0, t2 = 20;
+    function anim(){
+      t1 = (t1 + 0.7) % 46;
+      t2 = (t2 + 0.7) % 46;
+      p1.setAttribute('cx', t1);
+      p2.setAttribute('cx', t2);
+      wrap._raf = requestAnimationFrame(anim);
+    }
+    anim();
+    return wrap;
+  }
+
+  function scrollStageIntoView(key){
+    const node = document.querySelector(`.stage[data-stage-key="${key}"]`);
+    if (node) node.scrollIntoView({ behavior:'smooth', inline:'center', block:'nearest' });
+  }
+
+  /* ---------------------------------------------------------
+     PLAYBACK CONTROLS (step-through highlight mode)
+  --------------------------------------------------------- */
+  let playInterval = null;
+  let stepIndex = -1;
+
+  function applyStepHighlight(idx){
+    const stageNodes = [...document.querySelectorAll('.stage')];
+    stageNodes.forEach((node, i) => {
+      node.classList.remove('current','inactive');
+      if (idx === -1) return; // no highlight, show all normal
+      if (i === idx) node.classList.add('current');
+      else if (i > idx) node.classList.add('inactive');
+    });
+    const crumbs = [...document.querySelectorAll('.crumb')];
+    crumbs.forEach((c,i) => {
+      c.classList.remove('active');
+      if (i === idx) c.classList.add('active');
+    });
+    if (idx >= 0 && stageNodes[idx]) stageNodes[idx].scrollIntoView({ behavior:'smooth', inline:'center', block:'nearest' });
+  }
+
+  el('stepFwdBtn').addEventListener('click', () => {
+    const total = document.querySelectorAll('.stage').length;
+    if (!total) return;
+    stepIndex = Math.min(stepIndex + 1, total - 1);
+    applyStepHighlight(stepIndex);
+  });
+  el('stepBackBtn').addEventListener('click', () => {
+    if (stepIndex <= 0){ stepIndex = -1; applyStepHighlight(-1); return; }
+    stepIndex = Math.max(stepIndex - 1, 0);
+    applyStepHighlight(stepIndex);
+  });
+
+  el('playBtn').addEventListener('click', () => {
+    const btn = el('playBtn');
+    if (playInterval){
+      clearInterval(playInterval);
+      playInterval = null;
+      btn.textContent = 'â–¶';
+      btn.classList.remove('playing');
+      return;
+    }
+    btn.textContent = 'â¸';
+    btn.classList.add('playing');
+    const total = document.querySelectorAll('.stage').length;
+    if (!total) return;
+    if (stepIndex >= total - 1) stepIndex = -1;
+    const speed = 6 - Number(el('speedSlider').value); // 1..5 -> 5..1
+    playInterval = setInterval(() => {
+      stepIndex++;
+      if (stepIndex >= total){
+        clearInterval(playInterval);
+        playInterval = null;
+        btn.textContent = 'â–¶';
+        btn.classList.remove('playing');
+        applyStepHighlight(-1);
+        return;
+      }
+      applyStepHighlight(stepIndex);
+    }, speed * 650);
+  });
+
+})();
+</script>
+
+<style>
+.stage{cursor:pointer}.stage:hover{transform:translateY(-3px);border-color:var(--amber)}
+.stage.selected{border-color:var(--cyan);box-shadow:0 0 0 1px var(--cyan),0 18px 45px rgba(94,231,255,.12)}
+.row-chip{cursor:pointer}.row-chip.selected{outline:1px solid var(--cyan);background:rgba(94,231,255,.12);color:var(--cyan)}
+.interaction-hint{position:fixed;right:18px;bottom:18px;z-index:80;background:rgba(20,23,28,.94);border:1px solid var(--line);border-radius:9px;padding:9px 12px;color:var(--ink-faint);font:10px var(--mono);backdrop-filter:blur(8px)}
+@media(max-width:720px){.interaction-hint{display:none}}
+</style>
+<div class="interaction-hint">click a stage to focus · click rows to trace · ← → to step · space to play</div>
+<script>
+history.replaceState({},'',location.pathname);
+document.addEventListener('click',e=>{const stage=e.target.closest('.stage');if(stage){document.querySelectorAll('.stage.selected').forEach(x=>x.classList.remove('selected'));stage.classList.add('selected')}const chip=e.target.closest('.row-chip');if(chip){document.querySelectorAll('.row-chip.selected').forEach(x=>x.classList.remove('selected'));chip.classList.add('selected');const txt=chip.textContent.trim();document.querySelectorAll('.row-chip').forEach(x=>{if(x!==chip&&x.textContent.trim()===txt)x.classList.add('selected')})}});
+document.addEventListener('keydown',e=>{if(e.target.matches('textarea,input,select'))return;if(e.key==='ArrowRight')document.querySelector('#stepFwdBtn')?.click();if(e.key==='ArrowLeft')document.querySelector('#stepBackBtn')?.click();if(e.code==='Space'){e.preventDefault();document.querySelector('#playBtn')?.click()}if(e.key==='Escape')document.querySelectorAll('.selected').forEach(x=>x.classList.remove('selected'))});
+</script>
+</body>
+</html>

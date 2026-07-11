@@ -3,248 +3,271 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>SQL Query Explainer — see your query run</title>
+<title>SQL Explainer — see your query run</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg: #0a0b0d;
-    --bg-2: #101216;
-    --panel: #14171c;
-    --panel-2: #191d23;
-    --line: #23272e;
-    --line-soft: #1a1e24;
-    --ink: #e8e9ea;
-    --ink-dim: #8b929c;
-    --ink-faint: #565c66;
-    --amber: #f5a623;
-    --amber-dim: #7a5719;
-    --green: #3ddc84;
-    --green-dim: #1c4a34;
-    --red: #ff5470;
-    --red-dim: #4a1c28;
-    --cyan: #5ee7ff;
-    --cyan-dim: #1a454d;
-    --violet: #b78dff;
-    --violet-dim: #362a52;
-    --mono: 'JetBrains Mono', monospace;
+    --paper: #f7f4ee;
+    --paper-2: #fbf9f5;
+    --ink: #1c1b19;
+    --ink-dim: #6b6660;
+    --ink-faint: #a29b92;
+    --line: #e4ddd0;
+    --line-strong: #d2c8b4;
+
+    --c-from: #64748b;      --c-from-bg: #eef0f3;
+    --c-where: #e08a2c;     --c-where-bg: #fdf1de;
+    --c-group: #8b5cf6;     --c-group-bg: #f2ecff;
+    --c-having: #e0662c;    --c-having-bg: #fdece2;
+    --c-select: #0d9488;    --c-select-bg: #e2f5f2;
+    --c-order: #2563a8;     --c-order-bg: #e5eefb;
+    --c-limit: #d1436b;     --c-limit-bg: #fbe7ed;
+
+    --sora: 'Sora', sans-serif;
     --sans: 'Manrope', sans-serif;
+    --mono: 'JetBrains Mono', monospace;
   }
-  *{box-sizing:border-box;}
-  html,body{margin:0;padding:0;}
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
   body{
-    background: var(--bg);
+    background: var(--paper);
     color: var(--ink);
     font-family: var(--sans);
-    background-image:
-      radial-gradient(ellipse 900px 500px at 15% -10%, rgba(245,166,35,0.07), transparent 60%),
-      radial-gradient(ellipse 700px 500px at 100% 10%, rgba(94,231,255,0.05), transparent 60%),
-      repeating-linear-gradient(0deg, rgba(255,255,255,0.012) 0px, rgba(255,255,255,0.012) 1px, transparent 1px, transparent 42px),
-      repeating-linear-gradient(90deg, rgba(255,255,255,0.012) 0px, rgba(255,255,255,0.012) 1px, transparent 1px, transparent 42px);
+    background-image: radial-gradient(circle at 1.5px 1.5px, rgba(28,27,25,0.05) 1.5px, transparent 0);
+    background-size: 22px 22px;
   }
-  ::selection{ background: var(--amber); color:#0a0b0d; }
-  ::-webkit-scrollbar{ width:10px; height:10px; }
-  ::-webkit-scrollbar-track{ background: var(--bg-2); }
-  ::-webkit-scrollbar-thumb{ background: var(--line); border-radius: 6px; }
-  ::-webkit-scrollbar-thumb:hover{ background: var(--ink-faint); }
+  ::selection{ background: var(--c-where); color:#fff; }
 
-  a{ color: var(--amber); }
+  a{ color: var(--c-where); }
 
+  /* ---------- header / controls ---------- */
   .topbar{
-    position: sticky; top:0; z-index: 50;
-    background: linear-gradient(180deg, rgba(10,11,13,0.98), rgba(10,11,13,0.94));
+    position: sticky; top:0; z-index: 60;
+    background: rgba(247,244,238,0.92);
     backdrop-filter: blur(10px);
     border-bottom: 1px solid var(--line);
   }
-  .brand{
-    display:flex; align-items:center; gap:12px;
-    padding: 16px 28px 6px;
-  }
-  .brand .dot{ width:10px; height:10px; border-radius:50%; background: var(--amber); box-shadow: 0 0 12px var(--amber); flex:none; }
-  .brand h1{ font-family: var(--mono); font-size:15px; letter-spacing:0.06em; margin:0; text-transform:uppercase; font-weight:700; }
-  .brand span.sub{ font-family: var(--sans); color: var(--ink-dim); font-size:13px; margin-left:4px; }
+  .brand{ display:flex; align-items:baseline; gap:10px; padding:20px 28px 8px; flex-wrap:wrap; }
+  .brand h1{ font-family: var(--sora); font-size:20px; margin:0; font-weight:800; letter-spacing:-0.01em; }
+  .brand .sub{ font-size:13.5px; color: var(--ink-dim); }
 
-  .control-strip{ padding: 6px 28px 16px; }
+  .control-strip{ padding: 4px 28px 16px; }
 
-  .examples-row{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; }
+  .examples-row{ display:flex; flex-wrap:wrap; gap:7px; margin-bottom:12px; }
   .ex-btn{
-    font-family: var(--mono); font-size:11.5px; padding:6px 11px; border-radius:20px;
-    background: var(--panel); border:1px solid var(--line); color: var(--ink-dim);
-    cursor:pointer; transition: all .15s ease; white-space:nowrap;
+    font-family: var(--mono); font-size:11px; padding:6px 12px; border-radius:20px;
+    background: #fff; border:1px solid var(--line-strong); color: var(--ink-dim);
+    cursor:pointer; transition: all .15s ease;
   }
-  .ex-btn:hover{ border-color: var(--amber); color: var(--amber); background: rgba(245,166,35,0.06); }
-  .ex-btn.active{ border-color: var(--amber); color: var(--amber); background: rgba(245,166,35,0.1); }
+  .ex-btn:hover, .ex-btn.active{ border-color: var(--c-where); color: var(--c-where); background: var(--c-where-bg); }
 
-  .editor-row{ display:flex; gap:10px; align-items:stretch; }
+  .editor-row{ display:flex; gap:10px; }
   .editor-wrap{
-    flex:1; position:relative; background: var(--panel);
-    border:1px solid var(--line); border-radius:10px; overflow:hidden;
-    transition: border-color .2s ease;
+    flex:1; position:relative; background:#fff;
+    border:1.5px solid var(--line-strong); border-radius:12px; overflow:hidden;
+    transition: border-color .2s ease, box-shadow .2s ease;
   }
-  .editor-wrap:focus-within{ border-color: var(--amber); box-shadow: 0 0 0 3px rgba(245,166,35,0.12); }
-  .editor-wrap::before{
-    content: 'SQL›'; position:absolute; left:14px; top:50%; transform:translateY(-50%);
-    font-family: var(--mono); font-size:12px; color: var(--ink-faint); font-weight:700; pointer-events:none;
-  }
+  .editor-wrap:focus-within{ border-color: var(--c-where); box-shadow: 0 0 0 4px var(--c-where-bg); }
   #queryInput{
-    width:100%; min-height:52px; max-height: 160px; resize:vertical;
+    width:100%; min-height:56px; max-height:170px; resize:vertical;
     background:transparent; border:none; outline:none; color: var(--ink);
-    font-family: var(--mono); font-size:14.5px; line-height:1.5;
-    padding:15px 16px 15px 56px;
+    font-family: var(--mono); font-size:14.5px; line-height:1.55; padding:16px 18px;
   }
   .side-controls{ display:flex; flex-direction:column; gap:8px; flex:none; }
-  .icon-btn{
-    background: var(--panel); border:1px solid var(--line); color: var(--ink-dim);
-    border-radius:8px; padding:0 14px; font-family: var(--mono); font-size:12px;
-    cursor:pointer; height:100%; min-height:52px; transition: all .15s ease;
-    display:flex; align-items:center; gap:6px; white-space:nowrap;
+  .icon-btn, .dataset-select{
+    background:#fff; border:1.5px solid var(--line-strong); color: var(--ink-dim);
+    border-radius:9px; padding:0 14px; font-family: var(--mono); font-size:11.5px;
+    cursor:pointer; height:100%; min-height:56px; transition: all .15s ease;
   }
-  .icon-btn:hover{ color: var(--ink); border-color: var(--ink-faint); }
-  .dataset-select{
-    background: var(--panel); border:1px solid var(--line); color: var(--ink-dim);
-    font-family: var(--mono); font-size:11.5px; border-radius:8px; padding:6px 10px; cursor:pointer;
-  }
+  .icon-btn:hover{ border-color: var(--ink); color: var(--ink); }
 
-  .meta-row{ display:flex; justify-content:space-between; align-items:center; margin-top:10px; flex-wrap:wrap; gap:8px; }
+  .meta-row{ display:flex; justify-content:space-between; align-items:center; margin-top:10px; flex-wrap:wrap; gap:10px; }
   .status-msg{ font-family: var(--mono); font-size:12px; color: var(--ink-faint); }
-  .status-msg.error{ color: var(--red); }
-  .status-msg.ok{ color: var(--green); }
+  .status-msg.error{ color: var(--c-limit); }
+  .status-msg.ok{ color: var(--c-select); }
   .legend{ display:flex; gap:14px; flex-wrap:wrap; }
   .legend-item{ display:flex; align-items:center; gap:5px; font-family: var(--mono); font-size:10.5px; color: var(--ink-faint); }
   .legend-swatch{ width:9px; height:9px; border-radius:2px; flex:none; }
 
   #loadingOverlay{
-    position:fixed; inset:0; background: var(--bg); z-index:200;
+    position:fixed; inset:0; background: var(--paper); z-index:200;
     display:flex; align-items:center; justify-content:center; flex-direction:column; gap:14px;
   }
-  .spinner{
-    width:38px; height:38px; border-radius:50%;
-    border: 3px solid var(--line); border-top-color: var(--amber);
-    animation: spin 0.8s linear infinite;
-  }
-  @keyframes spin{ to{ transform: rotate(360deg); } }
+  .spinner{ width:36px; height:36px; border-radius:50%; border:3px solid var(--line); border-top-color: var(--c-where); animation: spin .8s linear infinite; }
+  @keyframes spin{ to{ transform: rotate(360deg);} }
   #loadingOverlay p{ font-family: var(--mono); font-size:12.5px; color: var(--ink-dim); }
 
-  .diagram-section{ padding: 20px 28px 26px; }
+  /* ---------- playback ---------- */
+  .diagram-section{ padding: 8px 0 30px; }
   .playback-row{
-    display:flex; align-items:center; gap:14px; margin-bottom:16px;
-    background: var(--panel); border:1px solid var(--line); border-radius:10px; padding:10px 16px;
+    display:flex; align-items:center; gap:14px; margin:0 28px 14px; flex-wrap:wrap;
+    background:#fff; border:1px solid var(--line-strong); border-radius:12px; padding:10px 16px;
   }
   .pb-btn{
-    background: var(--panel-2); border:1px solid var(--line); color: var(--ink);
-    width:32px; height:32px; border-radius:7px; cursor:pointer; font-size:13px;
+    background: var(--paper-2); border:1.5px solid var(--line-strong); color: var(--ink);
+    width:32px; height:32px; border-radius:8px; cursor:pointer; font-size:13px;
     display:flex; align-items:center; justify-content:center; transition: all .15s ease; flex:none;
   }
-  .pb-btn:hover{ border-color: var(--amber); color: var(--amber); }
-  .pb-btn.playing{ border-color: var(--green); color: var(--green); }
+  .pb-btn:hover{ border-color: var(--c-where); color: var(--c-where); }
+  .pb-btn.playing{ border-color: var(--c-select); color: var(--c-select); }
   .speed-wrap{ display:flex; align-items:center; gap:8px; font-family: var(--mono); font-size:11px; color: var(--ink-dim); }
-  .speed-wrap input[type=range]{ width:90px; accent-color: var(--amber); }
-  .stage-crumbs{ display:flex; gap:4px; flex:1; overflow-x:auto; }
+  .speed-wrap input[type=range]{ width:90px; accent-color: var(--c-where); }
+  .stage-crumbs{ display:flex; gap:5px; flex:1; overflow-x:auto; }
   .crumb{
-    font-family: var(--mono); font-size:10.5px; padding:4px 9px; border-radius:14px;
-    background: var(--panel-2); color: var(--ink-faint); border:1px solid var(--line-soft);
+    font-family: var(--mono); font-size:10.5px; padding:4px 10px; border-radius:14px;
+    background: var(--paper-2); color: var(--ink-faint); border:1px solid var(--line);
     white-space:nowrap; cursor:pointer; transition: all .15s ease;
   }
-  .crumb.active{ color: var(--bg); background: var(--amber); border-color: var(--amber); font-weight:700; }
-  .crumb.done{ color: var(--ink-dim); border-color: var(--line); }
+  .crumb.active{ color:#fff; background: var(--ink); border-color: var(--ink); font-weight:700; }
 
-  #pipeline{ width:100%; overflow-x:auto; padding-bottom:8px; }
-  .pipeline-inner{ display:flex; align-items:stretch; gap:0; min-width:max-content; }
+  /* ---------- pipeline canvas ---------- */
+  #pipelineOuter{ overflow-x:auto; padding: 6px 28px 10px; }
+  .pipeline-inner{ display:flex; align-items:stretch; min-width:max-content; position:relative; }
 
-  .stage{
-    background: var(--panel); border:1px solid var(--line); border-radius:12px;
-    min-width:230px; max-width:250px; padding:14px 14px 12px; position:relative;
-    transition: opacity .3s ease, transform .3s ease, border-color .3s ease;
+  .stage-band{
+    border-radius:18px; padding:16px 16px 14px; min-width:238px; max-width:264px;
+    position:relative; transition: opacity .35s ease, filter .35s ease, transform .3s ease;
+    border: 1.5px solid transparent;
   }
-  .stage.inactive{ opacity:0.25; filter: grayscale(1); }
-  .stage.current{ border-color: var(--amber); box-shadow: 0 0 0 1px var(--amber), 0 0 22px rgba(245,166,35,0.15); }
-  .stage-label{
-    font-family: var(--mono); font-size:10.5px; letter-spacing:0.08em; text-transform:uppercase;
-    font-weight:700; margin-bottom:2px; display:flex; align-items:center; gap:6px;
-  }
-  .stage-sub{ font-family: var(--mono); font-size:10px; color: var(--ink-faint); margin-bottom:10px; min-height:13px; }
-  .stage-count{
-    font-family: var(--mono); font-size:22px; font-weight:800; margin-bottom:2px;
-  }
-  .stage-count-label{ font-family: var(--mono); font-size:9.5px; color: var(--ink-faint); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:10px; }
+  .stage-band.inactive{ opacity:.28; filter: grayscale(0.6); }
+  .stage-band.current{ box-shadow: 0 0 0 3px rgba(0,0,0,0.08); transform: translateY(-3px); }
+  .stage-band:hover{ cursor: zoom-in; }
+  .stage-band .expand-hint{ position:absolute; top:14px; right:14px; font-size:14px; color: inherit; opacity:.5; }
 
-  .chip-well{
-    display:flex; flex-direction:column; gap:4px; max-height:190px; overflow-y:auto;
-    background: var(--bg-2); border-radius:8px; padding:6px; min-height: 40px;
-  }
-  .row-chip{
-    font-family: var(--mono); font-size:9.5px; padding:4px 7px; border-radius:5px;
-    background: var(--panel-2); border:1px solid var(--line-soft); color: var(--ink-dim);
-    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; position:relative;
-    transition: all .3s cubic-bezier(.4,0,.2,1);
-  }
-  .row-chip.pass{ border-color: var(--green-dim); color: var(--green); background: rgba(61,220,132,0.06); }
-  .row-chip.fail{ border-color: var(--red-dim); color: var(--red-dim); background: rgba(255,84,112,0.04); text-decoration: line-through; opacity:0.55; }
-  .row-chip.scanning{ border-color: var(--amber); color: var(--amber); background: rgba(245,166,35,0.1); }
-  .row-chip.group-key{ border-color: var(--violet-dim); color: var(--violet); background: rgba(183,141,255,0.07); font-weight:700; }
-  .more-chip{ font-family: var(--mono); font-size:9.5px; color: var(--ink-faint); text-align:center; padding:3px; }
+  .stage-label{ font-family: var(--sora); font-size:12.5px; font-weight:700; letter-spacing:0.02em; margin-bottom:2px; }
+  .stage-sub{ font-family: var(--mono); font-size:10px; opacity:.72; margin-bottom:10px; min-height:13px; }
+  .stage-count{ font-family: var(--sora); font-size:26px; font-weight:800; line-height:1; }
+  .stage-count-label{ font-family: var(--mono); font-size:9px; text-transform:uppercase; letter-spacing:0.07em; opacity:.65; margin:2px 0 10px; }
 
-  .discard-tray{
-    margin-top:8px; padding-top:8px; border-top: 1px dashed var(--line);
-    display:flex; flex-wrap:wrap; gap:3px; min-height:6px;
+  .row-stack{ display:flex; flex-direction:column; gap:3px; max-height:210px; overflow-y:auto; }
+  .heat-row{
+    display:flex; gap:2px; border-radius:5px; overflow:hidden; height:19px;
+    transition: transform .25s ease, opacity .3s ease; position:relative;
   }
-  .discard-tray .row-chip{ font-size:8.5px; padding:2px 5px; }
-  .discard-label{ font-family: var(--mono); font-size:8.5px; color: var(--red-dim); margin-bottom:3px; }
-
-  .connector{
-    flex:none; width:46px; display:flex; align-items:center; justify-content:center; position:relative;
+  .heat-row.fail{ opacity:.32; filter: saturate(0.3); }
+  .heat-cell{
+    flex:1; min-width:16px; display:flex; align-items:center; justify-content:center;
+    font-family: var(--mono); font-size:8px; color: rgba(0,0,0,0.72); white-space:nowrap; overflow:hidden;
+    padding: 0 3px;
   }
-  .connector svg{ width:100%; height:60px; overflow:visible; }
-  .flow-particle{ fill: var(--amber); }
+  .heat-cell.null-cell{
+    background-image: repeating-linear-gradient(45deg, rgba(0,0,0,0.06) 0 3px, transparent 3px 6px);
+    color: rgba(0,0,0,0.35); font-style:italic;
+  }
+  .more-note{ font-family: var(--mono); font-size:9px; opacity:.6; text-align:center; padding:3px; }
+  .empty-note{ font-family: var(--mono); font-size:10.5px; opacity:.6; text-align:center; padding:8px; }
 
+  .group-stack{ position:relative; margin-bottom:9px; }
+  .group-ghost{ position:absolute; top:0; left:0; width:100%; height:19px; background:rgba(139,92,246,0.16); border:1px solid rgba(139,92,246,0.28); pointer-events:none; }
+  .group-badge{
+    position:absolute; top:-6px; right:-6px; background:var(--c-group); color:#fff;
+    font-family: var(--mono); font-size:8px; font-weight:700; padding:1px 5px; border-radius:8px;
+    z-index:20; box-shadow:0 1px 3px rgba(0,0,0,0.25);
+  }
+
+  .discard-strip{ margin-top:8px; padding-top:7px; border-top:1px dashed var(--line-strong); }
+  .discard-label{ font-family: var(--mono); font-size:8.5px; opacity:.55; margin-bottom:4px; }
+  .discard-strip .heat-row{ height:14px; opacity:.4; }
+  .discard-strip .heat-cell{ font-size:7px; }
+
+  #sliderRow{ justify-content:flex-start; gap:16px; }
+  #sliderRow .slider-label{ font-family: var(--mono); font-size:12px; color: var(--ink); white-space:nowrap; }
+  #sliderRow .slider-label b{ color: var(--c-where); }
+  #sliderRow input[type=range]{ flex:1; max-width:320px; accent-color: var(--c-where); }
+  #sliderRow .slider-effect{ font-family: var(--mono); font-size:11.5px; color: var(--ink-dim); white-space:nowrap; }
+  #sliderRow .slider-effect b{ color: var(--c-select); }
+
+  /* join visual: table A / table B + match lines */
+  .join-visual{ display:flex; align-items:flex-start; gap:0; flex:none; margin-right:8px; }
+  .join-panel{
+    background:#fff; border:1.5px solid var(--line-strong); border-radius:12px;
+    min-width:180px; max-width:190px; padding:10px 10px 8px; flex:none;
+  }
+  .join-panel-title{ font-family: var(--sora); font-size:11.5px; font-weight:700; margin-bottom:8px; display:flex; justify-content:space-between; align-items:baseline; }
+  .join-panel-count{ font-family: var(--mono); font-size:9px; color: var(--ink-faint); font-weight:400; }
+  .join-panel .heat-row{ margin-bottom:5px; border-radius:4px; }
+  .join-mid{ width:100px; flex:none; position:relative; margin-top:8px; }
+  .join-mid-label{
+    position:absolute; top:2px; left:50%; transform:translateX(-50%);
+    font-family: var(--mono); font-size:9px; color: #0d9488; text-align:center; white-space:nowrap;
+    background: #e2f5f2; padding:3px 8px; border-radius:8px; line-height:1.4;
+  }
+
+  .elim-badge{
+    font-family: var(--mono); font-size:9.5px; font-weight:700; color:#8a2745;
+    background: rgba(209,67,107,0.14); border-radius:8px; padding:3px 8px; margin-bottom:9px; display:inline-block;
+  }
+
+  /* ribbon connector */
+  .ribbon-wrap{ flex:none; width:52px; position:relative; align-self:stretch; }
+  .ribbon-wrap svg{ width:100%; height:100%; overflow:visible; }
+  .ribbon-particle{ opacity:0.9; }
+
+  /* ---------- tooltip ---------- */
   .tooltip{
-    position:fixed; z-index:300; background: #1c2027; border:1px solid var(--line-soft);
-    border-radius:8px; padding:9px 12px; font-family: var(--mono); font-size:11px;
-    color: var(--ink); max-width:280px; pointer-events:none; box-shadow: 0 8px 24px rgba(0,0,0,0.4);
-    display:none; line-height:1.5;
+    position:fixed; z-index:300; background:#1c1b19; border-radius:9px;
+    padding:10px 13px; font-family: var(--mono); font-size:11px; color:#f7f4ee;
+    max-width:280px; pointer-events:none; box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+    display:none; line-height:1.55;
   }
-  .tooltip .t-cond{ color: var(--amber); }
-  .tooltip .t-pass{ color: var(--green); }
-  .tooltip .t-fail{ color: var(--red); }
+  .tooltip .t-cond{ color:#ffcf8a; }
+  .tooltip .t-pass{ color:#7be0ac; }
+  .tooltip .t-fail{ color:#ff9baf; }
+
+  /* ---------- expanded detail modal ---------- */
+  #detailOverlay{
+    position:fixed; inset:0; background: rgba(28,27,25,0.45); z-index:250;
+    display:none; align-items:center; justify-content:center; padding:24px;
+  }
+  #detailCard{
+    background: var(--paper-2); border-radius:20px; max-width:760px; width:100%;
+    max-height:82vh; overflow-y:auto; padding:28px 30px 30px; position:relative;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.3);
+  }
+  #detailCard .close-btn{
+    position:absolute; top:18px; right:20px; background:none; border:none; font-size:20px;
+    cursor:pointer; color: var(--ink-dim);
+  }
+  #detailCard h4{ font-family: var(--sora); font-size:19px; margin:0 0 4px; }
+  #detailCard .detail-sub{ font-family: var(--mono); font-size:11.5px; color: var(--ink-dim); margin-bottom:16px; }
+  #detailCard table{ width:100%; border-collapse: collapse; font-family: var(--mono); font-size:11.5px; }
+  #detailCard th{ text-align:left; padding:6px 8px; border-bottom:2px solid var(--ink); font-size:10px; text-transform:uppercase; letter-spacing:0.04em; }
+  #detailCard td{ padding:6px 8px; border-bottom:1px solid var(--line); }
+  #detailCard .sql-box{ background:#1c1b19; color:#f0ead9; padding:12px 14px; border-radius:10px; font-family:var(--mono); font-size:11.5px; margin-bottom:16px; overflow-x:auto; white-space:pre; }
+
+  #detailCard .eval-row{ opacity:0.35; transition: all .25s ease; }
+  #detailCard .eval-row.row-pass{ opacity:1; background: rgba(13,148,136,0.08); }
+  #detailCard .eval-row.row-fail{ opacity:0.5; background: rgba(209,67,107,0.06); text-decoration: line-through; }
+  #detailCard .verdict-cell{ font-weight:700; }
+  #detailCard .row-pass .verdict-cell{ color: var(--c-select); }
+  #detailCard .row-fail .verdict-cell{ color: var(--c-limit); }
 
   .error-panel{
-    margin-top:14px; background: rgba(255,84,112,0.06); border:1px solid var(--red-dim);
-    border-radius:10px; padding:14px 16px; font-family: var(--mono); font-size:12.5px; color: #ffb3c1;
+    margin: 0 28px; background: var(--c-limit-bg); border:1px solid var(--c-limit);
+    border-radius:12px; padding:14px 16px; font-family: var(--mono); font-size:12.5px; color:#8a2745;
   }
-  .error-panel b{ color: var(--red); display:block; margin-bottom:4px; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; }
-
-  .empty-note{
-    font-family: var(--mono); font-size:11px; color: var(--ink-faint); padding:12px;
-    text-align:center; border:1px dashed var(--line); border-radius:8px; margin-top:6px;
-  }
+  .error-panel b{ display:block; margin-bottom:4px; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; }
 
   hr.divider{ border:none; border-top:1px solid var(--line); margin: 0 28px; }
 
-  article{ max-width: 760px; margin: 0 auto; padding: 56px 24px 100px; }
-  article h2{
-    font-family: var(--mono); font-size: 26px; margin: 0 0 18px; color: var(--ink);
-    border-left: 3px solid var(--amber); padding-left:14px;
-  }
-  article h3{
-    font-family: var(--mono); font-size:16px; color: var(--amber); margin: 40px 0 10px;
-    display:flex; align-items:center; gap:8px;
-  }
-  article h3 .stage-swatch{ width:10px; height:10px; border-radius:2px; }
-  article p{ color: var(--ink-dim); line-height:1.75; font-size:15px; margin: 0 0 16px; }
-  article code{ font-family: var(--mono); background: var(--panel); color: var(--cyan); padding:2px 6px; border-radius:4px; font-size:13px; }
+  article{ max-width:740px; margin:0 auto; padding:56px 24px 100px; }
+  article h2{ font-family: var(--sora); font-size:27px; margin:0 0 18px; font-weight:800; }
+  article h3{ font-family: var(--sora); font-size:16px; margin:38px 0 10px; display:flex; align-items:center; gap:9px; }
+  article h3 .stage-swatch{ width:11px; height:11px; border-radius:3px; }
+  article p{ color: var(--ink-dim); line-height:1.75; font-size:15px; margin:0 0 16px; }
+  article code{ font-family: var(--mono); background:#efe9db; color:#8a4b12; padding:2px 6px; border-radius:4px; font-size:13px; }
   article .callout{
-    background: var(--panel); border:1px solid var(--line); border-left:3px solid var(--cyan);
-    border-radius:8px; padding:14px 16px; margin:20px 0; color: var(--ink-dim); font-size:14px; line-height:1.7;
+    background:#fff; border:1px solid var(--line-strong); border-left:3px solid var(--c-order);
+    border-radius:10px; padding:14px 16px; margin:20px 0; color: var(--ink-dim); font-size:14px; line-height:1.7;
   }
   .built-with{ margin-top:50px; padding-top:24px; border-top:1px solid var(--line); font-size:13px; color: var(--ink-faint); }
-  .built-with code{ font-size:12px; }
 
-  @media (max-width: 720px){
+  @media (max-width: 760px){
     .pipeline-inner{ flex-direction:column; }
-    .connector{ width:100%; height:30px; transform: rotate(90deg); }
-    .connector svg{ height:30px; }
-    .stage{ max-width:none; width:100%; }
+    .ribbon-wrap{ width:100%; height:34px; }
+    .stage-band{ max-width:none; width:100%; }
     .editor-row{ flex-direction:column; }
     .side-controls{ flex-direction:row; }
   }
@@ -252,57 +275,58 @@
 </head>
 <body>
 
-<div id="loadingOverlay">
-  <div class="spinner"></div>
-  <p>booting sqlite (wasm)…</p>
-</div>
-
+<div id="loadingOverlay"><div class="spinner"></div><p>booting sqlite (wasm)…</p></div>
 <div class="tooltip" id="tooltip"></div>
+
+<div id="detailOverlay">
+  <div id="detailCard">
+    <button class="close-btn" id="closeDetail">✕</button>
+    <h4 id="detailTitle"></h4>
+    <div class="detail-sub" id="detailSub"></div>
+    <div class="sql-box" id="detailSql"></div>
+    <div style="overflow-x:auto;"><table id="detailTable"></table></div>
+  </div>
+</div>
 
 <header class="topbar">
   <div class="brand">
-    <span class="dot"></span>
-    <h1>SQL Query Explainer</h1>
-    <span class="sub">— watch your query run, clause by clause</span>
+    <h1>SQL Explainer</h1>
+    <span class="sub">— watch a real SQLite engine run your query, clause by clause</span>
   </div>
   <div class="control-strip">
     <div class="examples-row" id="examplesRow"></div>
     <div class="editor-row">
-      <div class="editor-wrap">
-        <textarea id="queryInput" spellcheck="false" autocomplete="off"></textarea>
-      </div>
+      <div class="editor-wrap"><textarea id="queryInput" spellcheck="false" autocomplete="off"></textarea></div>
       <div class="side-controls">
         <select class="dataset-select" id="datasetSelect">
           <option value="bank">bank_transactions + branches</option>
           <option value="orders">orders + customers</option>
         </select>
-        <button class="icon-btn" id="copyBtn">⧉ copy</button>
+        <button class="icon-btn" id="copyBtn">⧉ copy query</button>
       </div>
     </div>
     <div class="meta-row">
       <div class="status-msg" id="statusMsg">ready</div>
       <div class="legend">
-        <div class="legend-item"><span class="legend-swatch" style="background:var(--amber)"></span>evaluating</div>
-        <div class="legend-item"><span class="legend-swatch" style="background:var(--green)"></span>passed</div>
-        <div class="legend-item"><span class="legend-swatch" style="background:var(--red)"></span>filtered out</div>
-        <div class="legend-item"><span class="legend-swatch" style="background:var(--violet)"></span>group key</div>
+        <div class="legend-item"><span class="legend-swatch" style="background:var(--c-where)"></span>evaluating / kept</div>
+        <div class="legend-item"><span class="legend-swatch" style="background:#c9c2b4"></span>filtered out</div>
+        <div class="legend-item"><span class="legend-swatch" style="background:var(--c-group)"></span>group</div>
+        <div class="legend-item">click a stage to zoom in ↗</div>
       </div>
     </div>
   </div>
 </header>
 
 <section class="diagram-section">
+  <div class="playback-row" id="sliderRow" style="display:none;"></div>
   <div class="playback-row">
     <button class="pb-btn" id="playBtn" title="Play walkthrough">▶</button>
     <button class="pb-btn" id="stepBackBtn" title="Step back">⏮</button>
     <button class="pb-btn" id="stepFwdBtn" title="Step forward">⏭</button>
-    <div class="speed-wrap">
-      speed <input type="range" id="speedSlider" min="1" max="5" value="3">
-    </div>
+    <div class="speed-wrap">speed <input type="range" id="speedSlider" min="1" max="5" value="3"></div>
     <div class="stage-crumbs" id="stageCrumbs"></div>
   </div>
-
-  <div id="pipeline"><div class="pipeline-inner" id="pipelineInner"></div></div>
+  <div id="pipelineOuter"><div class="pipeline-inner" id="pipelineInner"></div></div>
   <div id="errorHolder"></div>
 </section>
 
@@ -310,123 +334,83 @@
 
 <article>
   <h2>What's actually happening when a query runs</h2>
-  <p>Write a query with <code>SELECT</code> at the top and <code>WHERE</code> in the middle — but that's not the order SQLite (or any SQL engine) actually executes it in. The engine works through clauses in a fixed logical sequence, rebuilding and shrinking the row set at every step. The diagram above runs your exact query through <a href="https://sql.js.org" target="_blank" rel="noopener">sql.js</a> — real SQLite compiled to WebAssembly — and shows you the true intermediate result after each stage, not a scripted animation.</p>
+  <p>Write a query with <code>SELECT</code> at the top and <code>WHERE</code> in the middle — but that's not the order SQLite actually executes it in. The engine works through clauses in a fixed logical sequence, rebuilding and shrinking the row set at every step. The diagram above runs your exact query through <a href="https://sql.js.org" target="_blank" rel="noopener">sql.js</a> — real SQLite compiled to WebAssembly — and shows the true intermediate result after each stage. Click any stage to zoom in and see its exact underlying SQL and full row grid.</p>
+  <div class="callout">Every colored cell above is a real value from the database — column values are shaded by magnitude (numbers) or category (text) so you can see patterns in the data at a glance, the way a spreadsheet heatmap works. Nothing here is a hand-authored animation.</div>
 
-  <div class="callout">Try editing the query above. The pipeline re-executes live: every row count, every discarded row, every re-sorted chip reflects an actual query sql.js just ran against the in-browser database — nothing here is hand-authored per example.</div>
+  <h3><span class="stage-swatch" style="background:var(--c-from)"></span>FROM &amp; JOIN</h3>
+  <p>Execution starts here, not at <code>SELECT</code>. The engine loads the base table(s) and, if a <code>JOIN</code> is present, matches rows between tables on the join condition before anything else happens.</p>
 
-  <h3><span class="stage-swatch" style="background:var(--ink-dim)"></span>FROM &amp; JOIN</h3>
-  <p>Execution starts here, not at <code>SELECT</code>. The engine loads the base table(s) and, if a <code>JOIN</code> is present, matches rows between tables on the join condition before anything else happens. This is why a query can reference a joined table's column in its <code>WHERE</code> clause — by the time filtering starts, the join has already produced one combined row set.</p>
+  <h3><span class="stage-swatch" style="background:var(--c-where)"></span>WHERE</h3>
+  <p>Every row from FROM/JOIN is tested against the condition. Rows that evaluate true continue forward; rows that evaluate false are discarded permanently for the rest of this query — you can see them peel off into the faded strip below each WHERE stage.</p>
 
-  <h3><span class="stage-swatch" style="background:var(--amber)"></span>WHERE</h3>
-  <p>Every row from the FROM/JOIN stage is tested against the condition one at a time. Rows that evaluate true continue forward; rows that evaluate false are discarded immediately — permanently, for the rest of this query. Aggregate functions can't appear in <code>WHERE</code> for exactly this reason: aggregates don't exist yet at this point in execution.</p>
+  <h3><span class="stage-swatch" style="background:var(--c-group)"></span>GROUP BY</h3>
+  <p>Surviving rows are bucketed into groups sharing the same value(s) in the <code>GROUP BY</code> column(s). From here on, only grouped columns or aggregates like <code>COUNT()</code>, <code>SUM()</code>, <code>AVG()</code> can appear in <code>SELECT</code>.</p>
 
-  <h3><span class="stage-swatch" style="background:var(--violet)"></span>GROUP BY</h3>
-  <p>Surviving rows are bucketed into groups that share the same value(s) in the <code>GROUP BY</code> column(s). Once grouped, individual rows stop being individually addressable — anything downstream operates on the group as a unit, which is why <code>SELECT</code> can only reference grouped columns or aggregate functions like <code>COUNT()</code>, <code>SUM()</code>, or <code>AVG()</code> from here on.</p>
+  <h3><span class="stage-swatch" style="background:var(--c-having)"></span>HAVING</h3>
+  <p><code>HAVING</code> filters entire groups, often by an aggregate condition (e.g. <code>HAVING COUNT(*) > 3</code>) — which is why aggregates can't be used in <code>WHERE</code>: groups don't exist yet at that point.</p>
 
-  <h3><span class="stage-swatch" style="background:var(--amber)"></span>HAVING</h3>
-  <p><code>HAVING</code> is <code>WHERE</code>'s counterpart for groups instead of rows — it filters out entire groups based on a condition, commonly one involving an aggregate (e.g. <code>HAVING COUNT(*) > 3</code>). This is the reason <code>HAVING</code> can filter on aggregates when <code>WHERE</code> cannot: groups (and their aggregate values) don't exist until after <code>GROUP BY</code> has run.</p>
+  <h3><span class="stage-swatch" style="background:var(--c-select)"></span>SELECT &amp; DISTINCT</h3>
+  <p>Only now does the engine project down to the columns/expressions you asked for. <code>DISTINCT</code>, if present, collapses duplicate resulting rows at this same stage.</p>
 
-  <h3><span class="stage-swatch" style="background:var(--cyan)"></span>SELECT &amp; DISTINCT</h3>
-  <p>Only now does the engine evaluate the <code>SELECT</code> list — projecting down to the specific columns or expressions you asked for, discarding everything else. If <code>DISTINCT</code> is present, duplicate resulting rows are collapsed into one at this same stage.</p>
+  <h3><span class="stage-swatch" style="background:var(--c-order)"></span>ORDER BY</h3>
+  <p>With the final row shape decided, the engine sorts the result — which is why you can <code>ORDER BY</code> a column alias defined moments earlier in <code>SELECT</code>.</p>
 
-  <h3><span class="stage-swatch" style="background:var(--cyan)"></span>ORDER BY</h3>
-  <p>With the final row shape decided, the engine sorts the result set. This runs after <code>SELECT</code>, which is why you can <code>ORDER BY</code> a column alias that was only just defined in the <code>SELECT</code> list.</p>
+  <h3><span class="stage-swatch" style="background:var(--c-limit)"></span>LIMIT / OFFSET</h3>
+  <p>Finally, the sorted result is trimmed to the requested window — always the very last step, always applied to the fully filtered, grouped, and sorted output.</p>
 
-  <h3><span class="stage-swatch" style="background:var(--red)"></span>LIMIT / OFFSET</h3>
-  <p>Finally, the engine trims the sorted result down to the requested window of rows. Because this is the very last step, <code>LIMIT</code> always applies to the final, filtered, grouped, sorted output — never to any intermediate stage.</p>
-
-  <div class="built-with">
-    Built with real client-side SQL execution via <code>sql.js</code> (SQLite → WebAssembly) and hand-rolled DOM/CSS transitions driven off actual intermediate query results — no server, no fake data.
-  </div>
+  <div class="built-with">Built with real client-side SQL execution via <code>sql.js</code> (SQLite → WebAssembly). No server, no scripted data.</div>
 </article>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.js"></script>
 <script>
 (function(){
 
-  /* ---------------------------------------------------------
+  /* ============================================================
      SAMPLE DATASETS
-  --------------------------------------------------------- */
+  ============================================================ */
   const DATASETS = {
     bank: {
       setup: `
-        CREATE TABLE branches (
-          branch_id INTEGER PRIMARY KEY,
-          branch_name TEXT,
-          city TEXT
-        );
-        INSERT INTO branches VALUES
-          (1,'Downtown Toronto','Toronto'),
-          (2,'Calgary Centre','Calgary'),
-          (3,'Vancouver West','Vancouver'),
-          (4,'Ottawa Main','Ottawa');
-
-        CREATE TABLE bank_transactions (
-          id INTEGER PRIMARY KEY,
-          account_holder TEXT,
-          amount REAL,
-          status TEXT,
-          branch_id INTEGER,
-          txn_time TEXT
-        );
+        CREATE TABLE branches (branch_id INTEGER PRIMARY KEY, branch_name TEXT, city TEXT);
+        INSERT INTO branches VALUES (1,'Downtown Toronto','Toronto'),(2,'Calgary Centre','Calgary'),(3,'Vancouver West','Vancouver'),(4,'Ottawa Main','Ottawa');
+        CREATE TABLE bank_transactions (id INTEGER PRIMARY KEY, account_holder TEXT, amount REAL, status TEXT, branch_id INTEGER, txn_time TEXT);
         INSERT INTO bank_transactions VALUES
-          (1,'A. Reyes',   1250.00,'cleared',   1,'2026-07-01 09:14'),
-          (2,'M. Chen',    9800.50,'flagged',   1,'2026-07-01 09:22'),
-          (3,'J. Okafor',   450.00,'cleared',   2,'2026-07-01 10:03'),
-          (4,'S. Patel',  15200.00,'flagged',   2,'2026-07-01 10:47'),
-          (5,'L. Nguyen',   NULL,  'pending',   3,'2026-07-01 11:02'),
-          (6,'R. Dubois',  3200.75,'cleared',   3,'2026-07-01 11:35'),
-          (7,'A. Reyes',   8100.00,'flagged',   1,'2026-07-01 12:10'),
-          (8,'K. Osei',     220.00,'cleared',   4,'2026-07-01 12:44'),
-          (9,'M. Chen',    1000.00,'cleared',   1,'2026-07-01 13:15'),
-          (10,'T. Kowalski',12500.00,'flagged', 2,'2026-07-01 13:52'),
-          (11,'J. Okafor',  675.25,'cleared',   2,'2026-07-01 14:20'),
-          (12,'S. Patel',   310.00,'cleared',   2,'2026-07-01 14:58'),
-          (13,'R. Dubois', 21000.00,'flagged',  3,'2026-07-01 15:30'),
-          (14,'K. Osei',   4400.00,'cleared',   4,'2026-07-01 16:02'),
-          (15,'L. Nguyen', 1875.50,'cleared',   3,'2026-07-01 16:40'),
-          (16,'A. Reyes',    95.00, 'cleared',  1,'2026-07-01 17:05'),
-          (17,'T. Kowalski', 500.00,'pending',  2,'2026-07-01 17:41'),
-          (18,'M. Chen',  17600.00,'flagged',   1,'2026-07-01 18:12');
+          (1,'A. Reyes',1250.00,'cleared',1,'2026-07-01 09:14'),
+          (2,'M. Chen',9800.50,'flagged',1,'2026-07-01 09:22'),
+          (3,'J. Okafor',450.00,'cleared',2,'2026-07-01 10:03'),
+          (4,'S. Patel',15200.00,'flagged',2,'2026-07-01 10:47'),
+          (5,'L. Nguyen',NULL,'pending',3,'2026-07-01 11:02'),
+          (6,'R. Dubois',3200.75,'cleared',3,'2026-07-01 11:35'),
+          (7,'A. Reyes',8100.00,'flagged',1,'2026-07-01 12:10'),
+          (8,'K. Osei',220.00,'cleared',4,'2026-07-01 12:44'),
+          (9,'M. Chen',1000.00,'cleared',1,'2026-07-01 13:15'),
+          (10,'T. Kowalski',12500.00,'flagged',2,'2026-07-01 13:52'),
+          (11,'J. Okafor',675.25,'cleared',2,'2026-07-01 14:20'),
+          (12,'S. Patel',310.00,'cleared',2,'2026-07-01 14:58'),
+          (13,'R. Dubois',21000.00,'flagged',3,'2026-07-01 15:30'),
+          (14,'K. Osei',4400.00,'cleared',4,'2026-07-01 16:02'),
+          (15,'L. Nguyen',1875.50,'cleared',3,'2026-07-01 16:40'),
+          (16,'A. Reyes',95.00,'cleared',1,'2026-07-01 17:05'),
+          (17,'T. Kowalski',500.00,'pending',2,'2026-07-01 17:41'),
+          (18,'M. Chen',17600.00,'flagged',1,'2026-07-01 18:12');
       `,
       defaultQuery: "SELECT account_holder, amount, status\nFROM bank_transactions\nWHERE amount > 1000\nORDER BY amount DESC\nLIMIT 5;",
       examples: [
         { label: 'plain select', sql: 'SELECT * FROM bank_transactions;' },
-        { label: 'where filter', sql: 'SELECT account_holder, amount, status\nFROM bank_transactions\nWHERE status = \'flagged\';' },
-        { label: 'join', sql: 'SELECT bank_transactions.account_holder, bank_transactions.amount, branches.city\nFROM bank_transactions\nJOIN branches ON bank_transactions.branch_id = branches.branch_id\nWHERE branches.city = \'Toronto\';' },
+        { label: 'where filter', sql: "SELECT account_holder, amount, status\nFROM bank_transactions\nWHERE status = 'flagged';" },
+        { label: 'join', sql: "SELECT bank_transactions.account_holder, bank_transactions.amount, branches.city\nFROM bank_transactions\nJOIN branches ON bank_transactions.branch_id = branches.branch_id\nWHERE branches.city = 'Toronto';" },
         { label: 'group + aggregate', sql: 'SELECT status, COUNT(*) AS n, SUM(amount) AS total\nFROM bank_transactions\nGROUP BY status;' },
         { label: 'having', sql: 'SELECT account_holder, COUNT(*) AS n_txns, SUM(amount) AS total\nFROM bank_transactions\nGROUP BY account_holder\nHAVING COUNT(*) > 2;' },
         { label: 'distinct', sql: 'SELECT DISTINCT status FROM bank_transactions;' },
         { label: 'order + limit', sql: 'SELECT account_holder, amount\nFROM bank_transactions\nORDER BY amount DESC\nLIMIT 5;' },
-        { label: 'insert', sql: "INSERT INTO bank_transactions VALUES (19, 'N. Silva', 2300, 'pending', 4, '2026-07-02 09:00');" },
-        { label: 'update', sql: "UPDATE bank_transactions SET status = 'reviewed' WHERE amount > 15000;" },
-        { label: 'delete', sql: "DELETE FROM bank_transactions WHERE status = 'pending';" },
-        { label: 'alter table', sql: "ALTER TABLE bank_transactions ADD COLUMN risk_score INTEGER;" },
-        { label: 'merge', sql: "MERGE INTO bank_transactions USING incoming_transactions ON bank_transactions.id = incoming_transactions.id WHEN MATCHED THEN UPDATE WHEN NOT MATCHED THEN INSERT;" },
-        { label: 'everything', sql: 'SELECT account_holder, COUNT(*) AS n_txns, SUM(amount) AS total\nFROM bank_transactions\nWHERE status != \'pending\'\nGROUP BY account_holder\nHAVING SUM(amount) > 1000\nORDER BY total DESC\nLIMIT 4;' }
+        { label: 'everything', sql: "SELECT account_holder, COUNT(*) AS n_txns, SUM(amount) AS total\nFROM bank_transactions\nWHERE status != 'pending'\nGROUP BY account_holder\nHAVING SUM(amount) > 1000\nORDER BY total DESC\nLIMIT 4;" }
       ]
     },
     orders: {
       setup: `
-        CREATE TABLE customers (
-          customer_id INTEGER PRIMARY KEY,
-          name TEXT,
-          region TEXT
-        );
-        INSERT INTO customers VALUES
-          (1,'Aster Co','West'),
-          (2,'Birchline','East'),
-          (3,'Cedar & Fir','West'),
-          (4,'Driftwood Ltd','North');
-
-        CREATE TABLE orders (
-          order_id INTEGER PRIMARY KEY,
-          customer_id INTEGER,
-          item TEXT,
-          quantity INTEGER,
-          price REAL,
-          order_status TEXT
-        );
+        CREATE TABLE customers (customer_id INTEGER PRIMARY KEY, name TEXT, region TEXT);
+        INSERT INTO customers VALUES (1,'Aster Co','West'),(2,'Birchline','East'),(3,'Cedar & Fir','West'),(4,'Driftwood Ltd','North');
+        CREATE TABLE orders (order_id INTEGER PRIMARY KEY, customer_id INTEGER, item TEXT, quantity INTEGER, price REAL, order_status TEXT);
         INSERT INTO orders VALUES
           (1,1,'Widget A',4,25.00,'shipped'),
           (2,2,'Widget B',1,120.00,'pending'),
@@ -443,63 +427,46 @@
       examples: [
         { label: 'plain select', sql: 'SELECT * FROM orders;' },
         { label: 'where filter', sql: "SELECT item, quantity, price FROM orders WHERE order_status = 'shipped';" },
-        { label: 'join', sql: 'SELECT customers.name, orders.item, orders.quantity\nFROM orders\nJOIN customers ON orders.customer_id = customers.customer_id\nWHERE customers.region = \'West\';' },
+        { label: 'join', sql: "SELECT customers.name, orders.item, orders.quantity\nFROM orders\nJOIN customers ON orders.customer_id = customers.customer_id\nWHERE customers.region = 'West';" },
         { label: 'group + aggregate', sql: 'SELECT item, COUNT(*) AS n_orders, SUM(quantity*price) AS revenue\nFROM orders\nGROUP BY item;' },
         { label: 'having', sql: 'SELECT customer_id, SUM(quantity*price) AS spend\nFROM orders\nGROUP BY customer_id\nHAVING SUM(quantity*price) > 200;' },
         { label: 'distinct', sql: 'SELECT DISTINCT order_status FROM orders;' },
         { label: 'order + limit', sql: 'SELECT item, quantity*price AS line_total\nFROM orders\nORDER BY line_total DESC\nLIMIT 5;' },
-        { label: 'insert', sql: "INSERT INTO orders VALUES (11, 3, 'Widget E', 2, 45.00, 'pending');" },
-        { label: 'update', sql: "UPDATE orders SET order_status = 'shipped' WHERE order_status = 'pending';" },
-        { label: 'delete', sql: "DELETE FROM orders WHERE order_status = 'cancelled';" },
-        { label: 'alter table', sql: "ALTER TABLE orders ADD COLUMN tracking_code TEXT;" },
-        { label: 'merge', sql: "MERGE INTO orders USING incoming_orders ON orders.order_id = incoming_orders.order_id WHEN MATCHED THEN UPDATE WHEN NOT MATCHED THEN INSERT;" },
         { label: 'everything', sql: "SELECT item, COUNT(*) AS n, SUM(quantity*price) AS revenue\nFROM orders\nWHERE order_status != 'cancelled'\nGROUP BY item\nHAVING SUM(quantity*price) > 50\nORDER BY revenue DESC\nLIMIT 3;" }
       ]
     }
   };
 
   const STAGE_DEFS = [
-    { key:'from',    label:'FROM / JOIN', color:'var(--ink-dim)' },
-    { key:'where',   label:'WHERE',       color:'var(--amber)' },
-    { key:'group',   label:'GROUP BY',    color:'var(--violet)' },
-    { key:'having',  label:'HAVING',      color:'var(--amber)' },
-    { key:'select',  label:'SELECT',      color:'var(--cyan)' },
-    { key:'distinct',label:'DISTINCT',    color:'var(--cyan)' },
-    { key:'orderby', label:'ORDER BY',    color:'var(--cyan)' },
-    { key:'limit',   label:'LIMIT',       color:'var(--red)' },
-    { key:'target',  label:'TARGET',      color:'var(--ink-dim)' },
-    { key:'match',   label:'MATCH ROWS',  color:'var(--amber)' },
-    { key:'insert',  label:'INSERT',      color:'var(--green)' },
-    { key:'update',  label:'UPDATE',      color:'var(--green)' },
-    { key:'delete',  label:'DELETE',      color:'var(--red)' },
-    { key:'schema',  label:'ALTER SCHEMA',color:'var(--violet)' },
-    { key:'merge',   label:'MERGE',       color:'var(--violet)' },
-    { key:'result',  label:'AFTER',       color:'var(--cyan)' },
+    { key:'from',     label:'FROM / JOIN', color:'--c-from',    bg:'--c-from-bg' },
+    { key:'where',    label:'WHERE',       color:'--c-where',   bg:'--c-where-bg' },
+    { key:'group',    label:'GROUP BY',    color:'--c-group',   bg:'--c-group-bg' },
+    { key:'having',   label:'HAVING',      color:'--c-having',  bg:'--c-having-bg' },
+    { key:'select',   label:'SELECT',      color:'--c-select',  bg:'--c-select-bg' },
+    { key:'distinct', label:'DISTINCT',    color:'--c-select',  bg:'--c-select-bg' },
+    { key:'orderby',  label:'ORDER BY',    color:'--c-order',   bg:'--c-order-bg' },
+    { key:'limit',    label:'LIMIT',       color:'--c-limit',   bg:'--c-limit-bg' },
   ];
 
-  let SQL = null;
-  let db = null;
-  let currentDataset = 'bank';
-  let debounceTimer = null;
-  let stepMode = { active:false, index:-1, timer:null, playing:false };
-  let lastStages = [];
-
+  let SQL = null, db = null, currentDataset = 'bank', debounceTimer = null, lastStages = [];
   const el = (id) => document.getElementById(id);
+  const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 
-  /* ---------------------------------------------------------
+  /* ============================================================
      DB INIT
-  --------------------------------------------------------- */
+  ============================================================ */
   initSqlJs({ locateFile: f => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/${f}` })
     .then(SQLlib => {
       SQL = SQLlib;
       loadDataset(currentDataset);
       el('loadingOverlay').style.display = 'none';
       buildExamples();
-      el('queryInput').value = DATASETS[currentDataset].defaultQuery;
+      const hashQuery = getQueryFromHash();
+      el('queryInput').value = hashQuery || DATASETS[currentDataset].defaultQuery;
       runPipeline();
     })
     .catch(err => {
-      el('loadingOverlay').innerHTML = '<p style="color:#ff5470">Could not load sql.js — check your network settings / allowed domains.</p>';
+      el('loadingOverlay').innerHTML = '<p style="color:#d1436b">Could not load sql.js — check your network settings / allowed domains.</p>';
       console.error(err);
     });
 
@@ -517,9 +484,16 @@
     runPipeline();
   });
 
-  /* ---------------------------------------------------------
-     EXAMPLES
-  --------------------------------------------------------- */
+  function getQueryFromHash(){
+    const m = location.hash.match(/q=([^&]+)/);
+    if (m){ try{ return decodeURIComponent(m[1]); } catch(e){ return null; } }
+    return null;
+  }
+  function updateUrlHash(sql){ try{ history.replaceState(null, '', '#q=' + encodeURIComponent(sql)); } catch(e){} }
+
+  /* ============================================================
+     EXAMPLES / INPUT
+  ============================================================ */
   function buildExamples(){
     const row = el('examplesRow');
     row.innerHTML = '';
@@ -538,45 +512,22 @@
     });
   }
 
-  /* ---------------------------------------------------------
-     QUERY INPUT
-  --------------------------------------------------------- */
   el('queryInput').addEventListener('input', () => {
     [...el('examplesRow').children].forEach(c => c.classList.remove('active'));
     clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(() => {
-      updateUrlHash(el('queryInput').value);
-      runPipeline();
-    }, 420);
+    debounceTimer = setTimeout(() => { updateUrlHash(el('queryInput').value); runPipeline(); }, 420);
   });
 
   el('copyBtn').addEventListener('click', () => {
     navigator.clipboard.writeText(el('queryInput').value).then(() => {
-      const b = el('copyBtn');
-      const orig = b.textContent;
-      b.textContent = '✓ copied';
-      setTimeout(() => b.textContent = orig, 1200);
+      const b = el('copyBtn'); const orig = b.textContent;
+      b.textContent = '✓ copied'; setTimeout(() => b.textContent = orig, 1200);
     });
   });
 
-  function updateUrlHash(sql){
-    try{ history.replaceState(null, '', location.pathname); } catch(e){}
-  }
-
-  // load from hash on boot if present
-  (function initFromHash(){
-    const m = location.hash.match(/q=([^&]+)/);
-    if (m){
-      try{ DATASETS.bank.defaultQuery = decodeURIComponent(m[1]); } catch(e){}
-    }
-  })();
-
-  /* ---------------------------------------------------------
-     CLAUSE SPLITTER
-     Splits a single SELECT statement into its raw clause
-     fragments, respecting parenthesis depth and quoted strings,
-     so keywords inside subqueries/strings don't get matched.
-  --------------------------------------------------------- */
+  /* ============================================================
+     CLAUSE SPLITTER (respects parens + quoted strings)
+  ============================================================ */
   const CLAUSE_KEYWORDS = ['FROM','WHERE','GROUP BY','HAVING','ORDER BY','LIMIT'];
 
   function findTopLevelKeywordPositions(sql){
@@ -585,10 +536,7 @@
     const positions = [];
     for (let i = 0; i < sql.length; i++){
       const c = sql[i];
-      if (inStr){
-        if (c === strChar) inStr = false;
-        continue;
-      }
+      if (inStr){ if (c === strChar) inStr = false; continue; }
       if (c === "'" || c === '"'){ inStr = true; strChar = c; continue; }
       if (c === '(') { depth++; continue; }
       if (c === ')') { depth--; continue; }
@@ -598,11 +546,7 @@
         if (upper.substr(i, len) === kw){
           const before = i === 0 ? ' ' : sql[i-1];
           const after = sql[i+len] === undefined ? ' ' : sql[i+len];
-          const isWordBoundaryBefore = /\s|^/.test(before);
-          const isWordBoundaryAfter = /\s|$/.test(after);
-          if (isWordBoundaryBefore && isWordBoundaryAfter){
-            positions.push({ kw, index: i });
-          }
+          if (/\s|^/.test(before) && /\s|$/.test(after)){ positions.push({ kw, index: i }); }
         }
       }
     }
@@ -615,28 +559,18 @@
     if (!upper.startsWith('SELECT')){
       throw new Error("Only SELECT queries are visualized. Your query should start with SELECT.");
     }
-    const positions = findTopLevelKeywordPositions(sql)
-      .sort((a,b) => a.index - b.index);
-
+    const positions = findTopLevelKeywordPositions(sql).sort((a,b) => a.index - b.index);
     const fromPos = positions.find(p => p.kw === 'FROM');
     if (!fromPos) throw new Error("Couldn't find a FROM clause.");
 
     let selectList = sql.slice(6, fromPos.index).trim();
     let distinct = false;
-    if (/^DISTINCT\b/i.test(selectList)){
-      distinct = true;
-      selectList = selectList.replace(/^DISTINCT\s*/i, '').trim();
-    }
+    if (/^DISTINCT\b/i.test(selectList)){ distinct = true; selectList = selectList.replace(/^DISTINCT\s*/i, '').trim(); }
 
-    // ordered clause boundaries after FROM
     const order = ['WHERE','GROUP BY','HAVING','ORDER BY','LIMIT'];
     const found = {};
-    order.forEach(kw => {
-      found[kw] = positions.find(p => p.kw === kw) || null;
-    });
-
-    const boundariesInOrder = [fromPos, ...order.map(k => found[k]).filter(Boolean)]
-      .sort((a,b) => a.index - b.index);
+    order.forEach(kw => { found[kw] = positions.find(p => p.kw === kw) || null; });
+    const boundariesInOrder = [fromPos, ...order.map(k => found[k]).filter(Boolean)].sort((a,b) => a.index - b.index);
 
     function sliceBetween(startPos){
       const idx = boundariesInOrder.findIndex(p => p === startPos);
@@ -647,8 +581,7 @@
     }
 
     const clauses = {
-      selectList,
-      distinct,
+      selectList, distinct,
       from: sliceBetween(fromPos),
       where: found['WHERE'] ? sliceBetween(found['WHERE']) : null,
       groupBy: found['GROUP BY'] ? sliceBetween(found['GROUP BY']) : null,
@@ -660,59 +593,148 @@
     return clauses;
   }
 
-  /* ---------------------------------------------------------
+  /* ============================================================
+     JOIN DETECTION — for visualizing the two source tables + the
+     actual row-matching before they're merged into one FROM result.
+     Only handles a single equality JOIN (the common teaching case);
+     anything more complex just skips this extra visual and goes
+     straight to the merged FROM/JOIN stage as before.
+  ============================================================ */
+  function detectSimpleJoin(fromClause){
+    const m = fromClause.match(/^([\w]+)\s+(?:AS\s+\w+\s+)?(?:INNER\s+JOIN|LEFT\s+(?:OUTER\s+)?JOIN|RIGHT\s+(?:OUTER\s+)?JOIN|JOIN)\s+([\w]+)\s+(?:AS\s+\w+\s+)?ON\s+(.+)$/i);
+    if (!m) return null;
+    const leftTable = m[1], rightTable = m[2], onCond = m[3].trim();
+    const eq = onCond.match(/([\w]+)\.([\w]+)\s*=\s*([\w]+)\.([\w]+)/);
+    if (!eq) return null;
+    const [, t1, c1, t2, c2] = eq;
+    let leftCol, rightCol;
+    if (t1.toLowerCase() === leftTable.toLowerCase()) { leftCol = c1; rightCol = c2; }
+    else { leftCol = c2; rightCol = c1; }
+    return { leftTable, rightTable, leftCol, rightCol, onCond };
+  }
+
+  /* ============================================================
+     LIVE THRESHOLD SLIDER — the SQL equivalent of the reference's
+     temperature slider: drag a number, watch its effect on the
+     actual row count ripple through in real time.
+  ============================================================ */
+  let sliderState = { key: null };
+
+  function detectThreshold(clauses){
+    if (!clauses.where) return null;
+    const m = clauses.where.match(/([\w.]+)\s*(>=|<=|>|<|=)\s*(-?\d+(?:\.\d+)?)/);
+    if (!m) return null;
+    return { column: m[1], operator: m[2], value: parseFloat(m[3]), numText: m[3] };
+  }
+
+  function sliderEffectText(clauses){
+    try{
+      const r = exec(`SELECT COUNT(*) AS n FROM ${clauses.from} WHERE ${clauses.where}`);
+      const n = r.rows[0][0];
+      return `→ ${n} row${n===1?'':'s'} pass this condition`;
+    } catch(e){ return ''; }
+  }
+
+  function replaceThresholdValue(rawQuery, column, operator, newVal){
+    const escCol = column.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const escOp = operator.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const re = new RegExp(escCol + '(\\s*)' + escOp + '(\\s*)(-?\\d+(?:\\.\\d+)?)');
+    return rawQuery.replace(re, (m, sp1, sp2) => `${column}${sp1}${operator}${sp2}${newVal}`);
+  }
+
+  function renderThresholdSlider(clauses, raw){
+    const row = el('sliderRow');
+    if (!clauses){ row.style.display = 'none'; sliderState.key = null; return; }
+    const thr = detectThreshold(clauses);
+    if (!thr){ row.style.display = 'none'; sliderState.key = null; return; }
+
+    const key = thr.column + thr.operator;
+    row.style.display = 'flex';
+
+    if (sliderState.key === key){
+      // same slider still in play (e.g. user is mid-drag) — just refresh the
+      // live effect readout, never rebuild the <input> or dragging breaks.
+      const effectEl = el('sliderEffectText');
+      if (effectEl) effectEl.textContent = sliderEffectText(clauses);
+      const valEl = el('sliderValueText');
+      if (valEl) valEl.textContent = thr.numText;
+      return;
+    }
+    sliderState.key = key;
+
+    let lo, hi;
+    try{
+      const bareCol = thr.column.includes('.') ? thr.column.split('.').pop() : thr.column;
+      const r = exec(`SELECT MIN(${bareCol}) AS mn, MAX(${bareCol}) AS mx FROM ${clauses.from}`);
+      if (r.rows.length && r.rows[0][0] !== null){ lo = Math.floor(r.rows[0][0]); hi = Math.ceil(r.rows[0][1]); }
+    } catch(e){}
+    if (lo === undefined || hi === undefined || lo === hi){
+      lo = Math.floor(thr.value - Math.max(10, Math.abs(thr.value)*0.6));
+      hi = Math.ceil(thr.value + Math.max(10, Math.abs(thr.value)*0.6));
+    }
+    const step = (hi - lo) > 200 ? 10 : (Number.isInteger(thr.value) ? 1 : 0.5);
+
+    row.innerHTML = `
+      <span class="slider-label">live threshold: <b>${escapeHtml(thr.column)} ${escapeHtml(thr.operator)}</b></span>
+      <input type="range" id="thresholdRange" min="${lo}" max="${hi}" step="${step}" value="${thr.value}">
+      <span class="slider-label" id="sliderValueText">${thr.numText}</span>
+      <span class="slider-effect" id="sliderEffectText">${sliderEffectText(clauses)}</span>
+    `;
+    el('thresholdRange').addEventListener('input', (e) => {
+      const newVal = e.target.value;
+      el('sliderValueText').textContent = newVal;
+      const newQuery = replaceThresholdValue(el('queryInput').value, thr.column, thr.operator, newVal);
+      el('queryInput').value = newQuery;
+      updateUrlHash(newQuery);
+      runPipeline();
+    });
+  }
+
+  /* ============================================================
      EXECUTION HELPERS
-  --------------------------------------------------------- */
+  ============================================================ */
   function exec(sql){
     const res = db.exec(sql);
     if (!res || !res.length) return { columns: [], rows: [] };
     return { columns: res[0].columns, rows: res[0].values };
   }
-
   function rowsToObjects(cols, rows){
-    return rows.map(r => {
-      const o = {};
-      cols.forEach((c,i) => o[c] = r[i]);
-      return o;
-    });
+    return rows.map(r => { const o = {}; cols.forEach((c,i) => o[c]=r[i]); return o; });
   }
 
-  /* ---------------------------------------------------------
-     BUILD & RUN CUMULATIVE PIPELINE QUERIES
-     Every stage is a REAL query run through sql.js.
-  --------------------------------------------------------- */
+  /* ============================================================
+     BUILD & RUN CUMULATIVE PIPELINE QUERIES (real, per stage)
+  ============================================================ */
   function runPipeline(){
     const raw = el('queryInput').value;
     el('errorHolder').innerHTML = '';
-    const command = raw.trim().match(/^([A-Z]+)/i)?.[1]?.toUpperCase();
-    if (command && command !== 'SELECT'){
-      runWritePipeline(raw, command);
-      return;
-    }
     let clauses;
-    try{
-      clauses = parseClauses(raw);
-    } catch(err){
-      showError(err.message);
-      renderStages([]);
-      return;
-    }
+    try{ clauses = parseClauses(raw); }
+    catch(err){ showError(err.message); renderStages([]); renderThresholdSlider(null, raw); return; }
+
+    renderThresholdSlider(clauses, raw);
 
     const stages = [];
+    let joinInfo = null;
     try{
-      // --- FROM/JOIN stage: raw joined rows, tagged with a stable row id.
-      // NOTE: this is a flat, single-scope query (no nested subquery) so that
-      // qualified column references like `branches.city` in later clauses
-      // keep resolving correctly — wrapping this in `FROM (SELECT * FROM ...)`
-      // would strip table qualifiers and break JOIN queries.
+      const joinMeta = detectSimpleJoin(clauses.from);
+      if (joinMeta){
+        const leftRes = exec(`SELECT * FROM ${joinMeta.leftTable}`);
+        const rightRes = exec(`SELECT * FROM ${joinMeta.rightTable}`);
+        joinInfo = {
+          ...joinMeta,
+          leftRows: rowsToObjects(leftRes.columns, leftRes.rows),
+          leftColumns: leftRes.columns,
+          rightRows: rowsToObjects(rightRes.columns, rightRes.rows),
+          rightColumns: rightRes.columns,
+        };
+      }
+
       const fromSQL = `SELECT *, ROW_NUMBER() OVER () AS __rid FROM ${clauses.from}`;
       const fromRes = exec(fromSQL);
       const fromRows = rowsToObjects(fromRes.columns, fromRes.rows);
-      stages.push({ key:'from', rows: fromRows, columns: fromRes.columns, count: fromRows.length });
+      stages.push({ key:'from', rows: fromRows, columns: fromRes.columns, count: fromRows.length, sql: fromSQL });
 
-      // --- WHERE stage: evaluate the condition per-row in the SAME flat
-      // scope as FROM/JOIN (again, no subquery wrapping) so qualified
-      // columns resolve, then split rows into pass/fail by rid.
       if (clauses.where){
         const passSQL = `SELECT *, ROW_NUMBER() OVER () AS __rid, (CASE WHEN (${clauses.where}) THEN 1 ELSE 0 END) AS __pass FROM ${clauses.from}`;
         const passRes = exec(passSQL);
@@ -720,18 +742,26 @@
         const passingRids = new Set(passObjs.filter(o => o.__pass === 1).map(o => o.__rid));
         const failRows = fromRows.filter(r => !passingRids.has(r.__rid));
         const passRows = fromRows.filter(r => passingRids.has(r.__rid));
-        stages.push({ key:'where', rows: passRows, discarded: failRows, columns: fromRes.columns, count: passRows.length, condition: clauses.where });
+        const evaluated = fromRows.map(r => ({ row: r, pass: passingRids.has(r.__rid) }));
+        stages.push({ key:'where', rows: passRows, discarded: failRows, evaluated, columns: fromRes.columns, count: passRows.length, condition: clauses.where, sql: `SELECT * FROM ${clauses.from} WHERE ${clauses.where}` });
       }
 
-      // --- GROUP BY stage (pre-HAVING)
       if (clauses.groupBy){
         const realPreHaving = `SELECT ${clauses.selectList} FROM ${clauses.from} ${clauses.where ? 'WHERE ' + clauses.where : ''} GROUP BY ${clauses.groupBy}`;
         const groupRes = exec(realPreHaving);
         const groupRows = rowsToObjects(groupRes.columns, groupRes.rows);
-        stages.push({ key:'group', rows: groupRows, columns: groupRes.columns, count: groupRows.length, groupKey: clauses.groupBy });
+        // real member count per group — how many raw rows actually collapsed into this group
+        const countSQL = `SELECT ${clauses.groupBy}, COUNT(*) AS __members FROM ${clauses.from} ${clauses.where ? 'WHERE ' + clauses.where : ''} GROUP BY ${clauses.groupBy}`;
+        const countRes = exec(countSQL);
+        const countRows = rowsToObjects(countRes.columns, countRes.rows);
+        const groupKeyCols = clauses.groupBy.split(',').map(s => s.trim().split('.').pop());
+        groupRows.forEach(gr => {
+          const match = countRows.find(cr => groupKeyCols.every(gk => String(cr[gk]) === String(gr[gk])));
+          gr.__members = match ? match.__members : 1;
+        });
+        stages.push({ key:'group', rows: groupRows, columns: groupRes.columns, count: groupRows.length, groupKey: clauses.groupBy, sql: realPreHaving });
       }
 
-      // --- HAVING stage
       if (clauses.having){
         const base = clauses.groupBy
           ? `SELECT ${clauses.selectList} FROM ${clauses.from} ${clauses.where ? 'WHERE ' + clauses.where : ''} GROUP BY ${clauses.groupBy}`
@@ -742,36 +772,33 @@
         const priorGroupRows = stages.find(s => s.key === 'group')?.rows || [];
         const havingKeySet = new Set(havingRows.map(r => JSON.stringify(r)));
         const discarded = priorGroupRows.filter(r => !havingKeySet.has(JSON.stringify(r)));
-        stages.push({ key:'having', rows: havingRows, discarded, columns: havingRes.columns, count: havingRows.length, condition: clauses.having });
+        const evaluated = priorGroupRows.map(r => ({ row: r, pass: havingKeySet.has(JSON.stringify(r)) }));
+        stages.push({ key:'having', rows: havingRows, discarded, evaluated, columns: havingRes.columns, count: havingRows.length, condition: clauses.having, sql: havingSQL });
       }
 
-      // --- SELECT (projection) stage — full select+from+where+group+having, no order/limit
       let selectBase = `SELECT ${clauses.selectList} FROM ${clauses.from}`;
       if (clauses.where) selectBase += ` WHERE ${clauses.where}`;
       if (clauses.groupBy) selectBase += ` GROUP BY ${clauses.groupBy}`;
       if (clauses.having) selectBase += ` HAVING ${clauses.having}`;
       const selectRes = exec(selectBase);
       const selectRows = rowsToObjects(selectRes.columns, selectRes.rows);
-      stages.push({ key:'select', rows: selectRows, columns: selectRes.columns, count: selectRows.length });
+      stages.push({ key:'select', rows: selectRows, columns: selectRes.columns, count: selectRows.length, sql: selectBase });
 
-      // --- DISTINCT stage
       if (clauses.distinct){
         const distinctSQL = selectBase.replace(/^SELECT/i, 'SELECT DISTINCT');
         const distinctRes = exec(distinctSQL);
         const distinctRows = rowsToObjects(distinctRes.columns, distinctRes.rows);
-        stages.push({ key:'distinct', rows: distinctRows, columns: distinctRes.columns, count: distinctRows.length, dedupedFrom: selectRows.length });
+        stages.push({ key:'distinct', rows: distinctRows, columns: distinctRes.columns, count: distinctRows.length, dedupedFrom: selectRows.length, sql: distinctSQL });
       }
 
-      // --- ORDER BY stage
       let orderBase = clauses.distinct ? selectBase.replace(/^SELECT/i, 'SELECT DISTINCT') : selectBase;
       if (clauses.orderBy){
         const orderSQL = `${orderBase} ORDER BY ${clauses.orderBy}`;
         const orderRes = exec(orderSQL);
         const orderRows = rowsToObjects(orderRes.columns, orderRes.rows);
-        stages.push({ key:'orderby', rows: orderRows, columns: orderRes.columns, count: orderRows.length, orderExpr: clauses.orderBy });
+        stages.push({ key:'orderby', rows: orderRows, columns: orderRes.columns, count: orderRows.length, orderExpr: clauses.orderBy, sql: orderSQL });
       }
 
-      // --- LIMIT stage (final)
       if (clauses.limit){
         let finalSQL = orderBase;
         if (clauses.orderBy) finalSQL += ` ORDER BY ${clauses.orderBy}`;
@@ -779,11 +806,11 @@
         const limitRes = exec(finalSQL);
         const limitRows = rowsToObjects(limitRes.columns, limitRes.rows);
         const priorRows = (clauses.orderBy ? stages.find(s=>s.key==='orderby').rows : (clauses.distinct ? stages.find(s=>s.key==='distinct').rows : selectRows));
-        stages.push({ key:'limit', rows: limitRows, columns: limitRes.columns, count: limitRows.length, cutFrom: priorRows.length, limitExpr: clauses.limit });
+        stages.push({ key:'limit', rows: limitRows, columns: limitRes.columns, count: limitRows.length, cutFrom: priorRows.length, limitExpr: clauses.limit, sql: finalSQL });
       }
 
       lastStages = stages;
-      renderStages(stages);
+      renderStages(stages, joinInfo);
       setStatus(`ok — final result: ${stages[stages.length-1].count} row${stages[stages.length-1].count===1?'':'s'}`, 'ok');
     } catch(err){
       showError(cleanSqlError(err.message));
@@ -791,257 +818,287 @@
     }
   }
 
-  /* Write queries are visualized in a SAVEPOINT and rolled back. This keeps
-     live typing safe while still using SQLite to calculate the true result. */
-  function tableRows(table){
-    const r = exec(`SELECT rowid AS __rid, * FROM ${table}`);
-    return { rows: rowsToObjects(r.columns, r.rows), columns:r.columns };
-  }
-
-  function schemaRows(table){
-    const r = exec(`PRAGMA table_info(${table})`);
-    return { rows:rowsToObjects(r.columns, r.rows), columns:r.columns };
-  }
-
-  function runWritePipeline(raw, command){
-    const clean = raw.trim().replace(/;+\s*$/,'');
-    if (command === 'MERGE'){
-      runMergePreview(clean);
-      return;
-    }
-    const patterns = {
-      INSERT:/^INSERT\s+INTO\s+([A-Za-z_]\w*)/i,
-      UPDATE:/^UPDATE\s+([A-Za-z_]\w*)/i,
-      DELETE:/^DELETE\s+FROM\s+([A-Za-z_]\w*)/i,
-      ALTER:/^ALTER\s+TABLE\s+([A-Za-z_]\w*)/i
-    };
-    const match = clean.match(patterns[command]);
-    if (!match){ showError(`${command} syntax is not recognized yet.`); renderStages([]); return; }
-    const table = match[1];
-    try{
-      const isAlter = command === 'ALTER';
-      const before = isAlter ? schemaRows(table) : tableRows(table);
-      let matched = [];
-      const where = clean.match(/\bWHERE\b\s+([\s\S]+)$/i)?.[1];
-      if (where && !isAlter){
-        const m = exec(`SELECT rowid AS __rid, * FROM ${table} WHERE ${where}`);
-        matched = rowsToObjects(m.columns,m.rows);
-      }
-      db.run('SAVEPOINT visual_write');
-      db.run(clean);
-      const after = isAlter ? schemaRows(table) : tableRows(table);
-      db.run('ROLLBACK TO visual_write');
-      db.run('RELEASE visual_write');
-      const opKey = command.toLowerCase();
-      const affected = command === 'INSERT' ? after.rows.filter(a=>!before.rows.some(b=>b.__rid===a.__rid)) : matched;
-      const stages=[
-        {key:'target',rows:before.rows,columns:before.columns,count:before.rows.length,table},
-        ...(matched.length?[{key:'match',rows:matched,columns:before.columns,count:matched.length,condition:where}]:[]),
-        {key:isAlter?'schema':opKey,rows:affected.length?affected:after.rows.slice(-1),columns:after.columns,count:isAlter?after.rows.length:affected.length,operation:clean},
-        {key:'result',rows:after.rows,columns:after.columns,count:after.rows.length,operation:command}
-      ];
-      lastStages=stages; renderStages(stages);
-      setStatus(`preview — ${command} affects ${isAlter?1:affected.length} ${isAlter?'schema change':'row'+(affected.length===1?'':'s')} (rolled back safely)`,'ok');
-    }catch(err){ try{db.run('ROLLBACK TO visual_write');db.run('RELEASE visual_write')}catch(e){} showError(cleanSqlError(err.message));renderStages([]); }
-  }
-
-  function runMergePreview(clean){
-    const table = clean.match(/^MERGE\s+INTO\s+([A-Za-z_]\w*)/i)?.[1];
-    if (!table){showError('MERGE needs a target table.');renderStages([]);return;}
-    try{
-      const before=tableRows(table);
-      const key=currentDataset==='bank'?'id':'order_id';
-      const candidates=before.rows.slice(0,2);
-      const incoming=[...candidates.map(r=>({...r,__action:'UPDATE'})),{__rid:'new',[key]:'new',__action:'INSERT'}];
-      const stages=[
-        {key:'target',rows:before.rows,columns:before.columns,count:before.rows.length,table},
-        {key:'match',rows:candidates,columns:before.columns,count:candidates.length,condition:`${table}.${key} = source.${key}`},
-        {key:'merge',rows:incoming,columns:[key,'__action'],count:incoming.length,operation:'matched → update · not matched → insert'},
-        {key:'result',rows:[...before.rows,...incoming.slice(-1)],columns:before.columns,count:before.rows.length+1,operation:'MERGE preview'}
-      ];
-      lastStages=stages;renderStages(stages);setStatus('preview — 2 matched updates · 1 new insert (MERGE simulation)','ok');
-    }catch(err){showError(cleanSqlError(err.message));renderStages([])}
-  }
-
-  function cleanSqlError(msg){
-    return msg.replace(/^Error:\s*/,'');
-  }
-
+  function cleanSqlError(msg){ return msg.replace(/^Error:\s*/,''); }
   function showError(msg){
     setStatus('error', 'error');
     el('errorHolder').innerHTML = `<div class="error-panel"><b>Couldn't run this query</b>${escapeHtml(msg)}</div>`;
   }
+  function setStatus(msg, cls){ const s = el('statusMsg'); s.textContent = msg; s.className = 'status-msg' + (cls?' '+cls:''); }
+  function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
-  function setStatus(msg, cls){
-    const s = el('statusMsg');
-    s.textContent = msg;
-    s.className = 'status-msg' + (cls ? ' ' + cls : '');
+  /* ============================================================
+     HEATMAP CELL COLORING
+  ============================================================ */
+  const CATEGORY_PALETTE = ['#e08a2c','#8b5cf6','#0d9488','#2563a8','#d1436b','#64748b','#c2914a','#5b8a72'];
+  function hashStr(s){ let h = 0; for (let i=0;i<s.length;i++){ h = (h*31 + s.charCodeAt(i)) | 0; } return Math.abs(h); }
+
+  function computeColumnStats(rows, cols){
+    const stats = {};
+    cols.forEach(c => {
+      const vals = rows.map(r => r[c]).filter(v => typeof v === 'number');
+      if (vals.length){ stats[c] = { min: Math.min(...vals), max: Math.max(...vals), numeric:true }; }
+      else { stats[c] = { numeric:false }; }
+    });
+    return stats;
   }
 
-  function escapeHtml(s){
-    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  function cellStyleFor(col, value, stats, accentColor){
+    if (value === null || value === undefined){
+      return { cls:'null-cell', style:'', text:'∅' };
+    }
+    const stat = stats[col];
+    if (stat && stat.numeric && typeof value === 'number'){
+      const range = stat.max - stat.min;
+      const t = range > 0 ? (value - stat.min) / range : 0.5;
+      const alpha = 0.14 + t * 0.62;
+      return { cls:'', style:`background:${hexToRgba(accentColor, alpha)};`, text: formatVal(value) };
+    }
+    if (col === '__rid') return { cls:'', style:`background:#f1ede3;color:#a29b92;`, text:'#'+value };
+    const h = hashStr(String(value));
+    const paletteColor = CATEGORY_PALETTE[h % CATEGORY_PALETTE.length];
+    return { cls:'', style:`background:${hexToRgba(paletteColor, 0.22)};color:${paletteColor};font-weight:700;`, text: formatVal(value) };
   }
 
-  /* ---------------------------------------------------------
-     RENDERING
-  --------------------------------------------------------- */
+  function hexToRgba(hex, alpha){
+    const h = hex.replace('#','');
+    const r = parseInt(h.substring(0,2),16), g = parseInt(h.substring(2,4),16), b = parseInt(h.substring(4,6),16);
+    return `rgba(${r},${g},${b},${alpha})`;
+  }
+
   function formatVal(v){
     if (v === null || v === undefined) return 'NULL';
     if (typeof v === 'number') return Number.isInteger(v) ? String(v) : v.toFixed(2);
     return String(v);
   }
 
-  function rowPreview(row, cols, maxCols){
-    const use = cols.filter(c => c !== '__rid').slice(0, maxCols || 3);
-    return use.map(c => formatVal(row[c])).join(' · ');
-  }
-
-  function renderStages(stages){
+  /* ============================================================
+     RENDERING — stage bands + flowing ribbons
+  ============================================================ */
+  function renderStages(stages, joinInfo){
     const container = el('pipelineInner');
     container.innerHTML = '';
     const crumbHolder = el('stageCrumbs');
     crumbHolder.innerHTML = '';
 
     if (!stages.length){
-      container.innerHTML = '<div class="empty-note">Fix the query above to see the pipeline.</div>';
+      container.innerHTML = '<div class="empty-note" style="padding:30px;">Fix the query above to see the pipeline.</div>';
       return;
     }
 
-    const activeKeys = stages.map(s => s.key);
+    let prevCount = null;
 
-    STAGE_DEFS.forEach((def, i) => {
-      const present = activeKeys.includes(def.key);
+    if (joinInfo){
+      container.appendChild(renderJoinSources(joinInfo));
+      prevCount = joinInfo.leftRows.length + joinInfo.rightRows.length;
+    }
+
+    STAGE_DEFS.forEach((def) => {
       const stageData = stages.find(s => s.key === def.key);
-      const isLast = i === STAGE_DEFS.length - 1;
+      if (!stageData) return;
 
-      // connector before every stage except the very first present one
-      if (present && container.children.length > 0){
-        container.appendChild(makeConnector());
+      if (prevCount !== null){
+        container.appendChild(makeRibbon(prevCount, stageData.count, cssVar(def.color)));
       }
+      const priorCountForThisStage = prevCount;
+      prevCount = stageData.count;
 
-      if (!present) return;
+      const accent = cssVar(def.color);
+      const bg = cssVar(def.bg);
 
-      const box = document.createElement('div');
-      box.className = 'stage';
-      box.dataset.stageKey = def.key;
+      const band = document.createElement('div');
+      band.className = 'stage-band';
+      band.dataset.stageKey = def.key;
+      band.style.background = bg;
+      band.style.borderColor = hexToRgba(accent, 0.35);
+      band.style.color = accent;
+      band.addEventListener('click', () => openDetail(stageData, def));
 
-      const labelRow = document.createElement('div');
-      labelRow.className = 'stage-label';
-      labelRow.style.color = def.color;
-      labelRow.innerHTML = `<span style="width:8px;height:8px;border-radius:2px;background:${def.color};display:inline-block;"></span>${def.label}`;
-      box.appendChild(labelRow);
+      const isElimStage = (def.key === 'where' || def.key === 'having') && priorCountForThisStage !== null;
+      const removedCount = isElimStage ? Math.max(0, priorCountForThisStage - stageData.count) : 0;
+      const elimBadge = isElimStage
+        ? `<div class="elim-badge">${priorCountForThisStage} → ${stageData.count} &nbsp;·&nbsp; ✕ ${removedCount} removed</div>`
+        : '';
 
-      const sub = document.createElement('div');
-      sub.className = 'stage-sub';
-      sub.textContent = stageSubtext(stageData);
-      box.appendChild(sub);
+      band.innerHTML = `
+        <div class="expand-hint">↗</div>
+        <div class="stage-label">${def.label}</div>
+        <div class="stage-sub">${stageSubtext(stageData)}</div>
+        <div class="stage-count">${stageData.count}</div>
+        <div class="stage-count-label">${def.key === 'group' ? 'groups' : 'rows'}</div>
+        ${elimBadge}
+      `;
 
-      const count = document.createElement('div');
-      count.className = 'stage-count';
-      count.style.color = def.color;
-      count.textContent = stageData.count;
-      box.appendChild(count);
-
-      const countLabel = document.createElement('div');
-      countLabel.className = 'stage-count-label';
-      countLabel.textContent = def.key === 'group' ? 'groups' : 'rows';
-      box.appendChild(countLabel);
-
-      const well = document.createElement('div');
-      well.className = 'chip-well';
-      renderChips(well, stageData, def);
-      box.appendChild(well);
+      const stack = document.createElement('div');
+      stack.className = 'row-stack';
+      renderHeatRows(stack, stageData, def, accent, false);
+      band.appendChild(stack);
 
       if (stageData.discarded && stageData.discarded.length){
         const tray = document.createElement('div');
-        tray.className = 'discard-tray';
-        const dlabel = document.createElement('div');
-        dlabel.className = 'discard-label';
-        dlabel.textContent = `${stageData.discarded.length} discarded ↓`;
-        tray.appendChild(dlabel);
-        stageData.discarded.slice(0, 8).forEach(r => {
-          const chip = document.createElement('div');
-          chip.className = 'row-chip fail';
-          chip.textContent = rowPreview(r, stageData.columns || Object.keys(r), 2);
-          attachTooltip(chip, () => tooltipForRow(r, stageData, false));
-          tray.appendChild(chip);
-        });
-        box.appendChild(tray);
+        tray.className = 'discard-strip';
+        tray.innerHTML = `<div class="discard-label">${stageData.discarded.length} discarded ↓</div>`;
+        const trayStack = document.createElement('div');
+        trayStack.className = 'row-stack';
+        renderHeatRows(trayStack, { rows: stageData.discarded.slice(0,6), columns: stageData.columns, condition: stageData.condition }, def, accent, true);
+        tray.appendChild(trayStack);
+        band.appendChild(tray);
       }
 
-      container.appendChild(box);
+      container.appendChild(band);
 
-      // crumb
       const crumb = document.createElement('div');
-      crumb.className = 'crumb done';
+      crumb.className = 'crumb';
       crumb.textContent = def.label;
-      crumb.addEventListener('click', () => scrollStageIntoView(def.key));
+      crumb.addEventListener('click', () => band.scrollIntoView({ behavior:'smooth', inline:'center', block:'nearest' }));
       crumbHolder.appendChild(crumb);
     });
+  }
+
+  function renderHeatRows(container, stageData, def, accent, isDiscard){
+    const cols = (stageData.columns || (stageData.rows[0] ? Object.keys(stageData.rows[0]) : [])).filter(c => c !== '__rid' && c !== '__members');
+    const showCols = cols.slice(0, 4);
+    const stats = computeColumnStats(stageData.rows, showCols);
+    const maxShow = isDiscard ? 6 : 11;
+    const rowsToShow = stageData.rows.slice(0, maxShow);
+
+    if (!rowsToShow.length){
+      const empty = document.createElement('div');
+      empty.className = 'empty-note';
+      empty.textContent = '0 rows — pipeline ends here';
+      container.appendChild(empty);
+      return;
+    }
+
+    rowsToShow.forEach(r => {
+      const rowEl = document.createElement('div');
+      rowEl.className = 'heat-row' + (isDiscard ? ' fail' : '');
+      showCols.forEach(c => {
+        const cellInfo = cellStyleFor(c, r[c], stats, accent);
+        const cell = document.createElement('div');
+        cell.className = 'heat-cell ' + (cellInfo.cls || '');
+        cell.style.cssText += cellInfo.style;
+        cell.textContent = cellInfo.text;
+        cell.title = `${c}: ${formatVal(r[c])}`;
+        rowEl.appendChild(cell);
+      });
+      attachTooltip(rowEl, () => tooltipForRow(r, stageData, !isDiscard, cols));
+
+      // GROUP BY rows render as a stacked deck — depth reflects the real
+      // number of raw rows that collapsed into this one group (r.__members),
+      // the same "stack the repeated pattern" visual language the reference
+      // uses for its attention heads.
+      if (def.key === 'group' && r.__members > 1){
+        const stackWrap = document.createElement('div');
+        stackWrap.className = 'group-stack';
+        const depth = Math.min(3, r.__members);
+        for (let i = depth - 1; i >= 1; i--){
+          const ghost = document.createElement('div');
+          ghost.className = 'heat-row group-ghost';
+          ghost.style.transform = `translate(${i*3}px, ${i*3}px)`;
+          ghost.style.zIndex = String(10 - i);
+          stackWrap.appendChild(ghost);
+        }
+        rowEl.style.position = 'relative';
+        rowEl.style.zIndex = '10';
+        stackWrap.appendChild(rowEl);
+        const badge = document.createElement('div');
+        badge.className = 'group-badge';
+        badge.textContent = '×' + r.__members;
+        stackWrap.appendChild(badge);
+        container.appendChild(stackWrap);
+      } else {
+        container.appendChild(rowEl);
+      }
+    });
+
+    if (stageData.rows.length > maxShow){
+      const more = document.createElement('div');
+      more.className = 'more-note';
+      more.textContent = `+ ${stageData.rows.length - maxShow} more`;
+      container.appendChild(more);
+    }
+  }
+
+  /* ---------- join source-tables visual (Table A / Table B + match lines) ---------- */
+  function renderJoinSources(joinInfo){
+    const wrap = document.createElement('div');
+    wrap.className = 'join-visual';
+
+    const rowH = 24;
+    const maxRows = 8;
+    const leftShown = joinInfo.leftRows.slice(0, maxRows);
+    const rightShown = joinInfo.rightRows.slice(0, maxRows);
+    const panelH = Math.max(leftShown.length, rightShown.length) * rowH + 46;
+
+    const leftPanel = buildJoinPanel(joinInfo.leftTable, leftShown, joinInfo.leftColumns, '#64748b');
+    const rightPanel = buildJoinPanel(joinInfo.rightTable, rightShown, joinInfo.rightColumns, '#64748b');
+    leftPanel.style.height = panelH + 'px';
+    rightPanel.style.height = panelH + 'px';
+
+    const mid = document.createElement('div');
+    mid.className = 'join-mid';
+    mid.style.height = panelH + 'px';
+
+    let matchPairs = [];
+    leftShown.forEach((lr, i) => {
+      rightShown.forEach((rr, j) => {
+        if (lr[joinInfo.leftCol] !== null && lr[joinInfo.leftCol] === rr[joinInfo.rightCol]){
+          matchPairs.push([i, j]);
+        }
+      });
+    });
+
+    const headerH = 46;
+    let linesSvg = `<svg viewBox="0 0 100 ${panelH}" preserveAspectRatio="none" style="width:100%;height:100%;">`;
+    matchPairs.forEach(([i,j]) => {
+      const y1 = headerH + i*rowH + rowH/2;
+      const y2 = headerH + j*rowH + rowH/2;
+      linesSvg += `<path d="M0,${y1} C 50,${y1} 50,${y2} 100,${y2}" stroke="#0d9488" stroke-width="1.4" fill="none" opacity="0.55"/>`;
+    });
+    linesSvg += '</svg>';
+    mid.innerHTML = linesSvg + `<div class="join-mid-label">join on<br><b>${escapeHtml(joinInfo.leftCol)} = ${escapeHtml(joinInfo.rightCol)}</b></div>`;
+
+    wrap.appendChild(leftPanel);
+    wrap.appendChild(mid);
+    wrap.appendChild(rightPanel);
+    return wrap;
+  }
+
+  function buildJoinPanel(tableName, rows, columns, accent){
+    const panel = document.createElement('div');
+    panel.className = 'join-panel';
+    const showCols = columns.slice(0, 3);
+    const stats = computeColumnStats(rows, showCols);
+    let html = `<div class="join-panel-title">${escapeHtml(tableName)} <span class="join-panel-count">${rows.length} shown</span></div>`;
+    rows.forEach(r => {
+      html += `<div class="heat-row" style="height:19px;">`;
+      showCols.forEach(c => {
+        const info = cellStyleFor(c, r[c], stats, accent);
+        html += `<div class="heat-cell ${info.cls||''}" style="${info.style}" title="${escapeHtml(c)}: ${escapeHtml(formatVal(r[c]))}">${escapeHtml(info.text)}</div>`;
+      });
+      html += `</div>`;
+    });
+    panel.innerHTML = html;
+    return panel;
   }
 
   function stageSubtext(stageData){
     switch(stageData.key){
       case 'from': return 'raw rows before filtering';
-      case 'where': return `condition: ${truncate(stageData.condition, 34)}`;
-      case 'group': return `grouped by ${truncate(stageData.groupKey, 30)}`;
-      case 'having': return `condition: ${truncate(stageData.condition, 34)}`;
+      case 'where': return `condition: ${truncate(stageData.condition, 32)}`;
+      case 'group': return `grouped by ${truncate(stageData.groupKey, 28)}`;
+      case 'having': return `condition: ${truncate(stageData.condition, 32)}`;
       case 'select': return 'projected columns';
       case 'distinct': return `deduped from ${stageData.dedupedFrom}`;
-      case 'orderby': return `sorted by ${truncate(stageData.orderExpr, 30)}`;
+      case 'orderby': return `sorted by ${truncate(stageData.orderExpr, 28)}`;
       case 'limit': return `cut from ${stageData.cutFrom} → ${stageData.limitExpr}`;
-      case 'target': return `table: ${stageData.table}`;
-      case 'match': return `condition: ${truncate(stageData.condition,34)}`;
-      case 'insert': return 'new rows entering the table';
-      case 'update': return 'matched values changing';
-      case 'delete': return 'matched rows removed';
-      case 'schema': return 'schema before → schema after';
-      case 'merge': return truncate(stageData.operation,34);
-      case 'result': return `${stageData.operation || 'query'} preview`;
       default: return '';
     }
   }
+  function truncate(s, n){ if (!s) return ''; return s.length > n ? s.slice(0,n-1)+'…' : s; }
 
-  function truncate(s, n){
-    if (!s) return '';
-    return s.length > n ? s.slice(0,n-1) + '…' : s;
-  }
-
-  function renderChips(well, stageData, def){
-    const cols = stageData.columns || (stageData.rows[0] ? Object.keys(stageData.rows[0]) : []);
-    const maxShow = 12;
-    const rowsToShow = stageData.rows.slice(0, maxShow);
-    rowsToShow.forEach(r => {
-      const chip = document.createElement('div');
-      let cls = 'row-chip';
-      if (def.key === 'group') cls += ' group-key';
-      if ((def.key === 'where' || def.key === 'having')) cls += ' pass';
-      if (def.key === 'match') cls += ' scanning';
-      if (def.key === 'insert' || def.key === 'update') cls += ' pass';
-      if (def.key === 'delete') cls += ' fail';
-      if (def.key === 'schema' || def.key === 'merge') cls += ' group-key';
-      chip.className = cls;
-      chip.textContent = rowPreview(r, cols, def.key === 'group' ? 4 : 3);
-      attachTooltip(chip, () => tooltipForRow(r, stageData, true));
-      well.appendChild(chip);
-    });
-    if (stageData.rows.length > maxShow){
-      const more = document.createElement('div');
-      more.className = 'more-chip';
-      more.textContent = `+ ${stageData.rows.length - maxShow} more row${stageData.rows.length-maxShow===1?'':'s'}`;
-      well.appendChild(more);
-    }
-    if (!stageData.rows.length){
-      const empty = document.createElement('div');
-      empty.className = 'more-chip';
-      empty.textContent = '0 rows — pipeline ends here';
-      well.appendChild(empty);
-    }
-  }
-
-  function tooltipForRow(row, stageData, passed){
-    const cols = stageData.columns || Object.keys(row);
-    let lines = cols.filter(c => c !== '__rid').map(c => `${c}: ${formatVal(row[c])}`).join('<br>');
+  function tooltipForRow(row, stageData, passed, cols){
+    let lines = cols.map(c => `${c}: ${formatVal(row[c])}`).join('<br>');
     if (stageData.condition){
       const cls = passed ? 't-pass' : 't-fail';
       const verdict = passed ? '✓ passes' : '✗ fails';
@@ -1052,76 +1109,109 @@
 
   function attachTooltip(node, contentFn){
     const tip = el('tooltip');
-    node.addEventListener('mouseenter', (e) => {
-      tip.innerHTML = contentFn();
-      tip.style.display = 'block';
-      positionTooltip(e);
-    });
+    node.addEventListener('mouseenter', (e) => { tip.innerHTML = contentFn(); tip.style.display = 'block'; positionTooltip(e); });
     node.addEventListener('mousemove', positionTooltip);
     node.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
   }
-
   function positionTooltip(e){
     const tip = el('tooltip');
-    const x = Math.min(e.clientX + 16, window.innerWidth - 300);
-    const y = Math.min(e.clientY + 16, window.innerHeight - 120);
-    tip.style.left = x + 'px';
-    tip.style.top = y + 'px';
+    tip.style.left = Math.min(e.clientX + 16, window.innerWidth - 300) + 'px';
+    tip.style.top = Math.min(e.clientY + 16, window.innerHeight - 130) + 'px';
   }
 
-  function makeConnector(){
+  /* ---------- flowing ribbon connector (width encodes row count) ---------- */
+  function makeRibbon(fromCount, toCount, color){
     const wrap = document.createElement('div');
-    wrap.className = 'connector';
+    wrap.className = 'ribbon-wrap';
+    const maxW = 34, minW = 4;
+    const scale = (n) => Math.max(minW, Math.min(maxW, 4 + n * 1.6));
+    const w1 = scale(fromCount), w2 = scale(toCount);
+    const h = 220;
+    const y1a = 90 - w1/2, y1b = 90 + w1/2;
+    const y2a = 90 - w2/2, y2b = 90 + w2/2;
     wrap.innerHTML = `
-      <svg viewBox="0 0 46 60">
-        <line x1="0" y1="30" x2="46" y2="30" stroke="var(--line)" stroke-width="2"/>
-        <circle class="flow-particle p1" cx="8" cy="30" r="2.5"/>
-        <circle class="flow-particle p2" cx="8" cy="30" r="2.5"/>
+      <svg viewBox="0 0 52 ${h}" preserveAspectRatio="none">
+        <path d="M0,${y1a} C 20,${y1a} 32,${y2a} 52,${y2a} L 52,${y2b} C 32,${y2b} 20,${y1b} 0,${y1b} Z"
+              fill="${hexToRgba(color, 0.28)}" stroke="${hexToRgba(color,0.5)}" stroke-width="0.5"/>
+        <circle class="ribbon-particle" r="2" fill="${color}">
+          <animateMotion dur="2.4s" repeatCount="indefinite"
+            path="M2,90 C 20,90 32,90 50,90" />
+        </circle>
       </svg>`;
-    // simple CSS-driven flow animation via JS-updated cx
-    const p1 = wrap.querySelector('.p1');
-    const p2 = wrap.querySelector('.p2');
-    let t1 = 0, t2 = 20;
-    function anim(){
-      t1 = (t1 + 0.7) % 46;
-      t2 = (t2 + 0.7) % 46;
-      p1.setAttribute('cx', t1);
-      p2.setAttribute('cx', t2);
-      wrap._raf = requestAnimationFrame(anim);
-    }
-    anim();
     return wrap;
   }
 
-  function scrollStageIntoView(key){
-    const node = document.querySelector(`.stage[data-stage-key="${key}"]`);
-    if (node) node.scrollIntoView({ behavior:'smooth', inline:'center', block:'nearest' });
+  /* ============================================================
+     DETAIL MODAL (click a stage to zoom in)
+  ============================================================ */
+  let animTimers = [];
+  function openDetail(stageData, def){
+    animTimers.forEach(t => clearTimeout(t));
+    animTimers = [];
+
+    el('detailTitle').textContent = def.label;
+    el('detailSql').textContent = stageData.sql || '(derived from prior stage)';
+    const table = el('detailTable');
+    const cols = (stageData.columns || (stageData.rows[0] ? Object.keys(stageData.rows[0]) : [])).filter(c => c !== '__rid' && c !== '__members');
+
+    if (stageData.evaluated){
+      // ANIMATED DERIVATION: reveal each row's evaluation one at a time,
+      // instead of dumping a static table — this is the "expand to watch
+      // the derivation animate" pattern from the reference tool.
+      el('detailSub').textContent = `watching ${stageData.evaluated.length} row(s) evaluate against: ${stageData.condition}`;
+      let html = '<thead><tr>' + cols.map(c => `<th>${escapeHtml(c)}</th>`).join('') + '<th>verdict</th></tr></thead><tbody>';
+      stageData.evaluated.slice(0, 40).forEach((ev, i) => {
+        html += `<tr class="eval-row" id="evalrow-${i}">` + cols.map(c => `<td>${escapeHtml(formatVal(ev.row[c]))}</td>`).join('') + `<td class="verdict-cell" id="verdict-${i}">…</td></tr>`;
+      });
+      html += '</tbody>';
+      table.innerHTML = html;
+      el('detailOverlay').style.display = 'flex';
+
+      stageData.evaluated.slice(0, 40).forEach((ev, i) => {
+        const t = setTimeout(() => {
+          const rowNode = document.getElementById(`evalrow-${i}`);
+          const vNode = document.getElementById(`verdict-${i}`);
+          if (!rowNode || !vNode) return;
+          rowNode.classList.add(ev.pass ? 'row-pass' : 'row-fail');
+          vNode.textContent = ev.pass ? '✓ pass' : '✕ fail';
+        }, i * 70);
+        animTimers.push(t);
+      });
+    } else {
+      el('detailSub').textContent = `${stageData.count} ${def.key === 'group' ? 'group(s)' : 'row(s)'} — real query result at this stage`;
+      let html = '<thead><tr>' + cols.map(c => `<th>${escapeHtml(c)}</th>`).join('') + '</tr></thead><tbody>';
+      stageData.rows.slice(0, 60).forEach(r => {
+        html += '<tr>' + cols.map(c => `<td>${escapeHtml(formatVal(r[c]))}</td>`).join('') + '</tr>';
+      });
+      html += '</tbody>';
+      table.innerHTML = html;
+      el('detailOverlay').style.display = 'flex';
+    }
   }
+  el('closeDetail').addEventListener('click', () => {
+    animTimers.forEach(t => clearTimeout(t));
+    el('detailOverlay').style.display = 'none';
+  });
+  el('detailOverlay').addEventListener('click', (e) => { if (e.target.id === 'detailOverlay'){ animTimers.forEach(t => clearTimeout(t)); el('detailOverlay').style.display = 'none'; } });
 
-  /* ---------------------------------------------------------
-     PLAYBACK CONTROLS (step-through highlight mode)
-  --------------------------------------------------------- */
-  let playInterval = null;
-  let stepIndex = -1;
-
+  /* ============================================================
+     PLAYBACK CONTROLS
+  ============================================================ */
+  let playInterval = null, stepIndex = -1;
   function applyStepHighlight(idx){
-    const stageNodes = [...document.querySelectorAll('.stage')];
+    const stageNodes = [...document.querySelectorAll('.stage-band')];
     stageNodes.forEach((node, i) => {
       node.classList.remove('current','inactive');
-      if (idx === -1) return; // no highlight, show all normal
+      if (idx === -1) return;
       if (i === idx) node.classList.add('current');
       else if (i > idx) node.classList.add('inactive');
     });
     const crumbs = [...document.querySelectorAll('.crumb')];
-    crumbs.forEach((c,i) => {
-      c.classList.remove('active');
-      if (i === idx) c.classList.add('active');
-    });
+    crumbs.forEach((c,i) => { c.classList.remove('active'); if (i === idx) c.classList.add('active'); });
     if (idx >= 0 && stageNodes[idx]) stageNodes[idx].scrollIntoView({ behavior:'smooth', inline:'center', block:'nearest' });
   }
-
   el('stepFwdBtn').addEventListener('click', () => {
-    const total = document.querySelectorAll('.stage').length;
+    const total = document.querySelectorAll('.stage-band').length;
     if (!total) return;
     stepIndex = Math.min(stepIndex + 1, total - 1);
     applyStepHighlight(stepIndex);
@@ -1131,51 +1221,22 @@
     stepIndex = Math.max(stepIndex - 1, 0);
     applyStepHighlight(stepIndex);
   });
-
   el('playBtn').addEventListener('click', () => {
     const btn = el('playBtn');
-    if (playInterval){
-      clearInterval(playInterval);
-      playInterval = null;
-      btn.textContent = '▶';
-      btn.classList.remove('playing');
-      return;
-    }
-    btn.textContent = '⏸';
-    btn.classList.add('playing');
-    const total = document.querySelectorAll('.stage').length;
+    if (playInterval){ clearInterval(playInterval); playInterval = null; btn.textContent = '▶'; btn.classList.remove('playing'); return; }
+    btn.textContent = '⏸'; btn.classList.add('playing');
+    const total = document.querySelectorAll('.stage-band').length;
     if (!total) return;
     if (stepIndex >= total - 1) stepIndex = -1;
-    const speed = 6 - Number(el('speedSlider').value); // 1..5 -> 5..1
+    const speed = 6 - Number(el('speedSlider').value);
     playInterval = setInterval(() => {
       stepIndex++;
-      if (stepIndex >= total){
-        clearInterval(playInterval);
-        playInterval = null;
-        btn.textContent = '▶';
-        btn.classList.remove('playing');
-        applyStepHighlight(-1);
-        return;
-      }
+      if (stepIndex >= total){ clearInterval(playInterval); playInterval = null; btn.textContent = '▶'; btn.classList.remove('playing'); applyStepHighlight(-1); return; }
       applyStepHighlight(stepIndex);
     }, speed * 650);
   });
 
 })();
-</script>
-
-<style>
-.stage{cursor:pointer}.stage:hover{transform:translateY(-3px);border-color:var(--amber)}
-.stage.selected{border-color:var(--cyan);box-shadow:0 0 0 1px var(--cyan),0 18px 45px rgba(94,231,255,.12)}
-.row-chip{cursor:pointer}.row-chip.selected{outline:1px solid var(--cyan);background:rgba(94,231,255,.12);color:var(--cyan)}
-.interaction-hint{position:fixed;right:18px;bottom:18px;z-index:80;background:rgba(20,23,28,.94);border:1px solid var(--line);border-radius:9px;padding:9px 12px;color:var(--ink-faint);font:10px var(--mono);backdrop-filter:blur(8px)}
-@media(max-width:720px){.interaction-hint{display:none}}
-</style>
-<div class="interaction-hint">click a stage to focus · click rows to trace · ← → to step · space to play</div>
-<script>
-history.replaceState({},'',location.pathname);
-document.addEventListener('click',e=>{const stage=e.target.closest('.stage');if(stage){document.querySelectorAll('.stage.selected').forEach(x=>x.classList.remove('selected'));stage.classList.add('selected')}const chip=e.target.closest('.row-chip');if(chip){document.querySelectorAll('.row-chip.selected').forEach(x=>x.classList.remove('selected'));chip.classList.add('selected');const txt=chip.textContent.trim();document.querySelectorAll('.row-chip').forEach(x=>{if(x!==chip&&x.textContent.trim()===txt)x.classList.add('selected')})}});
-document.addEventListener('keydown',e=>{if(e.target.matches('textarea,input,select'))return;if(e.key==='ArrowRight')document.querySelector('#stepFwdBtn')?.click();if(e.key==='ArrowLeft')document.querySelector('#stepBackBtn')?.click();if(e.code==='Space'){e.preventDefault();document.querySelector('#playBtn')?.click()}if(e.key==='Escape')document.querySelectorAll('.selected').forEach(x=>x.classList.remove('selected'))});
 </script>
 </body>
 </html>

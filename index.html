@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>SQL Query Explainer â€” see your query run</title>
+<title>SQL Query Explainer — see your query run</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -84,7 +84,7 @@
   }
   .editor-wrap:focus-within{ border-color: var(--amber); box-shadow: 0 0 0 3px rgba(245,166,35,0.12); }
   .editor-wrap::before{
-    content: 'SQLâ€º'; position:absolute; left:14px; top:50%; transform:translateY(-50%);
+    content: 'SQL›'; position:absolute; left:14px; top:50%; transform:translateY(-50%);
     font-family: var(--mono); font-size:12px; color: var(--ink-faint); font-weight:700; pointer-events:none;
   }
   #queryInput{
@@ -254,7 +254,7 @@
 
 <div id="loadingOverlay">
   <div class="spinner"></div>
-  <p>booting sqlite (wasm)â€¦</p>
+  <p>booting sqlite (wasm)…</p>
 </div>
 
 <div class="tooltip" id="tooltip"></div>
@@ -263,7 +263,7 @@
   <div class="brand">
     <span class="dot"></span>
     <h1>SQL Query Explainer</h1>
-    <span class="sub">â€” watch your query run, clause by clause</span>
+    <span class="sub">— watch your query run, clause by clause</span>
   </div>
   <div class="control-strip">
     <div class="examples-row" id="examplesRow"></div>
@@ -276,7 +276,7 @@
           <option value="bank">bank_transactions + branches</option>
           <option value="orders">orders + customers</option>
         </select>
-        <button class="icon-btn" id="copyBtn">â§‰ copy</button>
+        <button class="icon-btn" id="copyBtn">⧉ copy</button>
       </div>
     </div>
     <div class="meta-row">
@@ -293,9 +293,9 @@
 
 <section class="diagram-section">
   <div class="playback-row">
-    <button class="pb-btn" id="playBtn" title="Play walkthrough">â–¶</button>
-    <button class="pb-btn" id="stepBackBtn" title="Step back">â®</button>
-    <button class="pb-btn" id="stepFwdBtn" title="Step forward">â­</button>
+    <button class="pb-btn" id="playBtn" title="Play walkthrough">▶</button>
+    <button class="pb-btn" id="stepBackBtn" title="Step back">⏮</button>
+    <button class="pb-btn" id="stepFwdBtn" title="Step forward">⏭</button>
     <div class="speed-wrap">
       speed <input type="range" id="speedSlider" min="1" max="5" value="3">
     </div>
@@ -310,33 +310,33 @@
 
 <article>
   <h2>What's actually happening when a query runs</h2>
-  <p>Write a query with <code>SELECT</code> at the top and <code>WHERE</code> in the middle â€” but that's not the order SQLite (or any SQL engine) actually executes it in. The engine works through clauses in a fixed logical sequence, rebuilding and shrinking the row set at every step. The diagram above runs your exact query through <a href="https://sql.js.org" target="_blank" rel="noopener">sql.js</a> â€” real SQLite compiled to WebAssembly â€” and shows you the true intermediate result after each stage, not a scripted animation.</p>
+  <p>Write a query with <code>SELECT</code> at the top and <code>WHERE</code> in the middle — but that's not the order SQLite (or any SQL engine) actually executes it in. The engine works through clauses in a fixed logical sequence, rebuilding and shrinking the row set at every step. The diagram above runs your exact query through <a href="https://sql.js.org" target="_blank" rel="noopener">sql.js</a> — real SQLite compiled to WebAssembly — and shows you the true intermediate result after each stage, not a scripted animation.</p>
 
-  <div class="callout">Try editing the query above. The pipeline re-executes live: every row count, every discarded row, every re-sorted chip reflects an actual query sql.js just ran against the in-browser database â€” nothing here is hand-authored per example.</div>
+  <div class="callout">Try editing the query above. The pipeline re-executes live: every row count, every discarded row, every re-sorted chip reflects an actual query sql.js just ran against the in-browser database — nothing here is hand-authored per example.</div>
 
   <h3><span class="stage-swatch" style="background:var(--ink-dim)"></span>FROM &amp; JOIN</h3>
-  <p>Execution starts here, not at <code>SELECT</code>. The engine loads the base table(s) and, if a <code>JOIN</code> is present, matches rows between tables on the join condition before anything else happens. This is why a query can reference a joined table's column in its <code>WHERE</code> clause â€” by the time filtering starts, the join has already produced one combined row set.</p>
+  <p>Execution starts here, not at <code>SELECT</code>. The engine loads the base table(s) and, if a <code>JOIN</code> is present, matches rows between tables on the join condition before anything else happens. This is why a query can reference a joined table's column in its <code>WHERE</code> clause — by the time filtering starts, the join has already produced one combined row set.</p>
 
   <h3><span class="stage-swatch" style="background:var(--amber)"></span>WHERE</h3>
-  <p>Every row from the FROM/JOIN stage is tested against the condition one at a time. Rows that evaluate true continue forward; rows that evaluate false are discarded immediately â€” permanently, for the rest of this query. Aggregate functions can't appear in <code>WHERE</code> for exactly this reason: aggregates don't exist yet at this point in execution.</p>
+  <p>Every row from the FROM/JOIN stage is tested against the condition one at a time. Rows that evaluate true continue forward; rows that evaluate false are discarded immediately — permanently, for the rest of this query. Aggregate functions can't appear in <code>WHERE</code> for exactly this reason: aggregates don't exist yet at this point in execution.</p>
 
   <h3><span class="stage-swatch" style="background:var(--violet)"></span>GROUP BY</h3>
-  <p>Surviving rows are bucketed into groups that share the same value(s) in the <code>GROUP BY</code> column(s). Once grouped, individual rows stop being individually addressable â€” anything downstream operates on the group as a unit, which is why <code>SELECT</code> can only reference grouped columns or aggregate functions like <code>COUNT()</code>, <code>SUM()</code>, or <code>AVG()</code> from here on.</p>
+  <p>Surviving rows are bucketed into groups that share the same value(s) in the <code>GROUP BY</code> column(s). Once grouped, individual rows stop being individually addressable — anything downstream operates on the group as a unit, which is why <code>SELECT</code> can only reference grouped columns or aggregate functions like <code>COUNT()</code>, <code>SUM()</code>, or <code>AVG()</code> from here on.</p>
 
   <h3><span class="stage-swatch" style="background:var(--amber)"></span>HAVING</h3>
-  <p><code>HAVING</code> is <code>WHERE</code>'s counterpart for groups instead of rows â€” it filters out entire groups based on a condition, commonly one involving an aggregate (e.g. <code>HAVING COUNT(*) > 3</code>). This is the reason <code>HAVING</code> can filter on aggregates when <code>WHERE</code> cannot: groups (and their aggregate values) don't exist until after <code>GROUP BY</code> has run.</p>
+  <p><code>HAVING</code> is <code>WHERE</code>'s counterpart for groups instead of rows — it filters out entire groups based on a condition, commonly one involving an aggregate (e.g. <code>HAVING COUNT(*) > 3</code>). This is the reason <code>HAVING</code> can filter on aggregates when <code>WHERE</code> cannot: groups (and their aggregate values) don't exist until after <code>GROUP BY</code> has run.</p>
 
   <h3><span class="stage-swatch" style="background:var(--cyan)"></span>SELECT &amp; DISTINCT</h3>
-  <p>Only now does the engine evaluate the <code>SELECT</code> list â€” projecting down to the specific columns or expressions you asked for, discarding everything else. If <code>DISTINCT</code> is present, duplicate resulting rows are collapsed into one at this same stage.</p>
+  <p>Only now does the engine evaluate the <code>SELECT</code> list — projecting down to the specific columns or expressions you asked for, discarding everything else. If <code>DISTINCT</code> is present, duplicate resulting rows are collapsed into one at this same stage.</p>
 
   <h3><span class="stage-swatch" style="background:var(--cyan)"></span>ORDER BY</h3>
   <p>With the final row shape decided, the engine sorts the result set. This runs after <code>SELECT</code>, which is why you can <code>ORDER BY</code> a column alias that was only just defined in the <code>SELECT</code> list.</p>
 
   <h3><span class="stage-swatch" style="background:var(--red)"></span>LIMIT / OFFSET</h3>
-  <p>Finally, the engine trims the sorted result down to the requested window of rows. Because this is the very last step, <code>LIMIT</code> always applies to the final, filtered, grouped, sorted output â€” never to any intermediate stage.</p>
+  <p>Finally, the engine trims the sorted result down to the requested window of rows. Because this is the very last step, <code>LIMIT</code> always applies to the final, filtered, grouped, sorted output — never to any intermediate stage.</p>
 
   <div class="built-with">
-    Built with real client-side SQL execution via <code>sql.js</code> (SQLite â†’ WebAssembly) and hand-rolled DOM/CSS transitions driven off actual intermediate query results â€” no server, no fake data.
+    Built with real client-side SQL execution via <code>sql.js</code> (SQLite → WebAssembly) and hand-rolled DOM/CSS transitions driven off actual intermediate query results — no server, no fake data.
   </div>
 </article>
 
@@ -481,7 +481,7 @@
       runPipeline();
     })
     .catch(err => {
-      el('loadingOverlay').innerHTML = '<p style="color:#ff5470">Could not load sql.js â€” check your network settings / allowed domains.</p>';
+      el('loadingOverlay').innerHTML = '<p style="color:#ff5470">Could not load sql.js — check your network settings / allowed domains.</p>';
       console.error(err);
     });
 
@@ -536,7 +536,7 @@
     navigator.clipboard.writeText(el('queryInput').value).then(() => {
       const b = el('copyBtn');
       const orig = b.textContent;
-      b.textContent = 'âœ“ copied';
+      b.textContent = '✓ copied';
       setTimeout(() => b.textContent = orig, 1200);
     });
   });
@@ -680,7 +680,7 @@
       // --- FROM/JOIN stage: raw joined rows, tagged with a stable row id.
       // NOTE: this is a flat, single-scope query (no nested subquery) so that
       // qualified column references like `branches.city` in later clauses
-      // keep resolving correctly â€” wrapping this in `FROM (SELECT * FROM ...)`
+      // keep resolving correctly — wrapping this in `FROM (SELECT * FROM ...)`
       // would strip table qualifiers and break JOIN queries.
       const fromSQL = `SELECT *, ROW_NUMBER() OVER () AS __rid FROM ${clauses.from}`;
       const fromRes = exec(fromSQL);
@@ -722,7 +722,7 @@
         stages.push({ key:'having', rows: havingRows, discarded, columns: havingRes.columns, count: havingRows.length, condition: clauses.having });
       }
 
-      // --- SELECT (projection) stage â€” full select+from+where+group+having, no order/limit
+      // --- SELECT (projection) stage — full select+from+where+group+having, no order/limit
       let selectBase = `SELECT ${clauses.selectList} FROM ${clauses.from}`;
       if (clauses.where) selectBase += ` WHERE ${clauses.where}`;
       if (clauses.groupBy) selectBase += ` GROUP BY ${clauses.groupBy}`;
@@ -761,7 +761,7 @@
 
       lastStages = stages;
       renderStages(stages);
-      setStatus(`ok â€” final result: ${stages[stages.length-1].count} row${stages[stages.length-1].count===1?'':'s'}`, 'ok');
+      setStatus(`ok — final result: ${stages[stages.length-1].count} row${stages[stages.length-1].count===1?'':'s'}`, 'ok');
     } catch(err){
       showError(cleanSqlError(err.message));
       renderStages([]);
@@ -798,7 +798,7 @@
 
   function rowPreview(row, cols, maxCols){
     const use = cols.filter(c => c !== '__rid').slice(0, maxCols || 3);
-    return use.map(c => formatVal(row[c])).join(' Â· ');
+    return use.map(c => formatVal(row[c])).join(' · ');
   }
 
   function renderStages(stages){
@@ -862,7 +862,7 @@
         tray.className = 'discard-tray';
         const dlabel = document.createElement('div');
         dlabel.className = 'discard-label';
-        dlabel.textContent = `${stageData.discarded.length} discarded â†“`;
+        dlabel.textContent = `${stageData.discarded.length} discarded ↓`;
         tray.appendChild(dlabel);
         stageData.discarded.slice(0, 8).forEach(r => {
           const chip = document.createElement('div');
@@ -894,14 +894,14 @@
       case 'select': return 'projected columns';
       case 'distinct': return `deduped from ${stageData.dedupedFrom}`;
       case 'orderby': return `sorted by ${truncate(stageData.orderExpr, 30)}`;
-      case 'limit': return `cut from ${stageData.cutFrom} â†’ ${stageData.limitExpr}`;
+      case 'limit': return `cut from ${stageData.cutFrom} → ${stageData.limitExpr}`;
       default: return '';
     }
   }
 
   function truncate(s, n){
     if (!s) return '';
-    return s.length > n ? s.slice(0,n-1) + 'â€¦' : s;
+    return s.length > n ? s.slice(0,n-1) + '…' : s;
   }
 
   function renderChips(well, stageData, def){
@@ -927,7 +927,7 @@
     if (!stageData.rows.length){
       const empty = document.createElement('div');
       empty.className = 'more-chip';
-      empty.textContent = '0 rows â€” pipeline ends here';
+      empty.textContent = '0 rows — pipeline ends here';
       well.appendChild(empty);
     }
   }
@@ -937,7 +937,7 @@
     let lines = cols.filter(c => c !== '__rid').map(c => `${c}: ${formatVal(row[c])}`).join('<br>');
     if (stageData.condition){
       const cls = passed ? 't-pass' : 't-fail';
-      const verdict = passed ? 'âœ“ passes' : 'âœ— fails';
+      const verdict = passed ? '✓ passes' : '✗ fails';
       lines += `<br><br><span class="t-cond">${escapeHtml(stageData.condition)}</span><br><span class="${cls}">${verdict}</span>`;
     }
     return lines;
@@ -1030,11 +1030,11 @@
     if (playInterval){
       clearInterval(playInterval);
       playInterval = null;
-      btn.textContent = 'â–¶';
+      btn.textContent = '▶';
       btn.classList.remove('playing');
       return;
     }
-    btn.textContent = 'â¸';
+    btn.textContent = '⏸';
     btn.classList.add('playing');
     const total = document.querySelectorAll('.stage').length;
     if (!total) return;
@@ -1045,7 +1045,7 @@
       if (stepIndex >= total){
         clearInterval(playInterval);
         playInterval = null;
-        btn.textContent = 'â–¶';
+        btn.textContent = '▶';
         btn.classList.remove('playing');
         applyStepHighlight(-1);
         return;

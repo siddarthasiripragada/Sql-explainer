@@ -62,6 +62,16 @@
     cursor:pointer; transition: all .15s ease;
   }
   .ex-btn:hover, .ex-btn.active{ border-color: var(--c-where); color: var(--c-where); background: var(--c-where-bg); }
+  .more-sql-wrap{ position:relative; }
+  .more-sql-menu{
+    position:absolute; top:calc(100% + 8px); right:0; z-index:80; width:220px;
+    display:none; grid-template-columns:repeat(2,1fr); gap:6px; padding:10px;
+    background:#fff; border:1px solid var(--line-strong); border-radius:12px;
+    box-shadow:0 12px 34px rgba(35,31,24,.14);
+  }
+  .more-sql-menu.open{ display:grid; }
+  .more-sql-menu button{ font-family:var(--mono); font-size:10.5px; padding:8px; border-radius:8px; border:1px solid var(--line); background:var(--paper); color:var(--ink-dim); cursor:pointer; }
+  .more-sql-menu button:hover{ border-color:var(--c-group); color:var(--c-group); background:var(--c-group-bg); }
 
   .editor-row{ display:flex; gap:10px; }
   .editor-wrap{
@@ -175,6 +185,7 @@
   .empty-note{ font-family: var(--mono); font-size:10.5px; opacity:.6; text-align:center; padding:8px; }
 
   .stage-band[data-stage-key="group"]{ min-width:290px; max-width:310px; }
+  .stage-band[data-stage-key="schema"],.stage-band[data-stage-key="merge"]{ min-width:275px; max-width:300px; }
   .group-stack{ position:relative; margin:2px 7px 10px 0; }
   .group-ghost{ position:absolute; top:0; left:0; width:calc(100% - 7px); height:19px; background:rgba(139,92,246,0.16); border:1px solid rgba(139,92,246,0.28); pointer-events:none; }
   .group-badge{
@@ -455,6 +466,25 @@
     }
   };
 
+  const WRITE_EXAMPLES = {
+    bank: [
+      { label:'INSERT', sql:"INSERT INTO bank_transactions VALUES (19,'N. Silva',2300,'pending',4,'2026-07-02 09:00');" },
+      { label:'UPDATE', sql:"UPDATE bank_transactions SET status='reviewed' WHERE amount > 15000;" },
+      { label:'DELETE', sql:"DELETE FROM bank_transactions WHERE status='pending';" },
+      { label:'ALTER', sql:"ALTER TABLE bank_transactions ADD COLUMN risk_score INTEGER;" },
+      { label:'CREATE', sql:"CREATE TABLE alerts (id INTEGER PRIMARY KEY, transaction_id INTEGER, reason TEXT);" },
+      { label:'MERGE', sql:"MERGE INTO bank_transactions USING incoming_transactions ON bank_transactions.id = incoming_transactions.id WHEN MATCHED THEN UPDATE WHEN NOT MATCHED THEN INSERT;" }
+    ],
+    orders: [
+      { label:'INSERT', sql:"INSERT INTO orders VALUES (11,3,'Widget E',2,45.00,'pending');" },
+      { label:'UPDATE', sql:"UPDATE orders SET order_status='shipped' WHERE order_status='pending';" },
+      { label:'DELETE', sql:"DELETE FROM orders WHERE order_status='cancelled';" },
+      { label:'ALTER', sql:"ALTER TABLE orders ADD COLUMN tracking_code TEXT;" },
+      { label:'CREATE', sql:"CREATE TABLE shipments (id INTEGER PRIMARY KEY, order_id INTEGER, carrier TEXT);" },
+      { label:'MERGE', sql:"MERGE INTO orders USING incoming_orders ON orders.order_id = incoming_orders.order_id WHEN MATCHED THEN UPDATE WHEN NOT MATCHED THEN INSERT;" }
+    ]
+  };
+
   const STAGE_DEFS = [
     { key:'from',     label:'FROM / JOIN', color:'--c-from',    bg:'--c-from-bg' },
     { key:'where',    label:'WHERE',       color:'--c-where',   bg:'--c-where-bg' },
@@ -464,6 +494,14 @@
     { key:'distinct', label:'DISTINCT',    color:'--c-select',  bg:'--c-select-bg' },
     { key:'orderby',  label:'ORDER BY',    color:'--c-order',   bg:'--c-order-bg' },
     { key:'limit',    label:'LIMIT',       color:'--c-limit',   bg:'--c-limit-bg' },
+    { key:'target',   label:'TARGET',      color:'--c-from',    bg:'--c-from-bg' },
+    { key:'match',    label:'MATCH ROWS',  color:'--c-where',   bg:'--c-where-bg' },
+    { key:'insert',   label:'INSERT',      color:'--c-select',  bg:'--c-select-bg' },
+    { key:'update',   label:'UPDATE',      color:'--c-select',  bg:'--c-select-bg' },
+    { key:'delete',   label:'DELETE',      color:'--c-limit',   bg:'--c-limit-bg' },
+    { key:'schema',   label:'SCHEMA',      color:'--c-group',   bg:'--c-group-bg' },
+    { key:'merge',    label:'MERGE',       color:'--c-group',   bg:'--c-group-bg' },
+    { key:'result',   label:'AFTER',       color:'--c-order',   bg:'--c-order-bg' },
   ];
 
   let SQL = null, db = null, currentDataset = 'bank', debounceTimer = null, lastStages = [];
@@ -528,7 +566,39 @@
       });
       row.appendChild(b);
     });
+    const wrap = document.createElement('div');
+    wrap.className = 'more-sql-wrap';
+    const toggle = document.createElement('button');
+    toggle.className = 'ex-btn';
+    toggle.textContent = 'more SQL ▾';
+    toggle.setAttribute('aria-expanded','false');
+    const menu = document.createElement('div');
+    menu.className = 'more-sql-menu';
+    WRITE_EXAMPLES[currentDataset].forEach(ex => {
+      const b = document.createElement('button');
+      b.textContent = ex.label;
+      b.addEventListener('click', () => {
+        el('queryInput').value = ex.sql;
+        menu.classList.remove('open');
+        toggle.setAttribute('aria-expanded','false');
+        updateUrlHash(ex.sql);
+        runPipeline();
+      });
+      menu.appendChild(b);
+    });
+    toggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const open = menu.classList.toggle('open');
+      toggle.setAttribute('aria-expanded',String(open));
+    });
+    wrap.append(toggle,menu);
+    row.appendChild(wrap);
   }
+
+  document.addEventListener('click', () => {
+    document.querySelectorAll('.more-sql-menu.open').forEach(m => m.classList.remove('open'));
+    document.querySelectorAll('.more-sql-wrap [aria-expanded="true"]').forEach(b => b.setAttribute('aria-expanded','false'));
+  });
 
   el('queryInput').addEventListener('input', () => {
     [...el('examplesRow').children].forEach(c => c.classList.remove('active'));
@@ -762,6 +832,13 @@
     const raw = el('queryInput').value;
     el('errorHolder').innerHTML = '';
     renderTokenStrip(raw);
+    const command = raw.trim().match(/^([A-Z]+)/i)?.[1]?.toUpperCase();
+    if (command && command !== 'SELECT'){
+      renderThresholdSlider(null, raw);
+      el('finalChartHolder').innerHTML='';
+      runWritePipeline(raw, command);
+      return;
+    }
     let clauses;
     try{ clauses = parseClauses(raw); }
     catch(err){ showError(err.message); renderStages([]); renderThresholdSlider(null, raw); el('finalChartHolder').innerHTML=''; return; }
@@ -872,6 +949,65 @@
       renderStages([]);
       el('finalChartHolder').innerHTML = '';
     }
+  }
+
+  function tableSnapshot(table){
+    const r=exec(`SELECT rowid AS __rid, * FROM ${table}`);
+    return {rows:rowsToObjects(r.columns,r.rows),columns:r.columns};
+  }
+  function schemaSnapshot(table){
+    const r=exec(`PRAGMA table_info(${table})`);
+    return {rows:rowsToObjects(r.columns,r.rows),columns:r.columns};
+  }
+  function runWritePipeline(raw,command){
+    const sql=raw.trim().replace(/;+\s*$/,'');
+    if(command==='MERGE'){runMergePreview(sql);return;}
+    const patterns={INSERT:/^INSERT\s+INTO\s+([A-Za-z_]\w*)/i,UPDATE:/^UPDATE\s+([A-Za-z_]\w*)/i,DELETE:/^DELETE\s+FROM\s+([A-Za-z_]\w*)/i,ALTER:/^ALTER\s+TABLE\s+([A-Za-z_]\w*)/i,CREATE:/^CREATE\s+TABLE\s+([A-Za-z_]\w*)/i};
+    const parsed=sql.match(patterns[command]);
+    if(!parsed){showError(`${command} syntax is not recognized yet.`);renderStages([]);return;}
+    const table=parsed[1],isSchema=command==='ALTER'||command==='CREATE';
+    let inSavepoint=false;
+    try{
+      const before=command==='CREATE'?{rows:[],columns:['name','type','notnull','dflt_value','pk']}:(isSchema?schemaSnapshot(table):tableSnapshot(table));
+      const where=sql.match(/\bWHERE\b\s+([\s\S]+)$/i)?.[1];
+      let matched=[];
+      if(where&&!isSchema){const m=exec(`SELECT rowid AS __rid, * FROM ${table} WHERE ${where}`);matched=rowsToObjects(m.columns,m.rows);}
+      db.run('SAVEPOINT visual_write');inSavepoint=true;db.run(sql);
+      const after=isSchema?schemaSnapshot(table):tableSnapshot(table);
+      const afterById=new Map(after.rows.map(r=>[r.__rid,r]));
+      let affected=[];
+      if(command==='INSERT') affected=after.rows.filter(a=>!before.rows.some(b=>b.__rid===a.__rid));
+      else if(command==='UPDATE') affected=matched.map(r=>afterById.get(r.__rid)).filter(Boolean);
+      else if(command==='DELETE') affected=matched;
+      else affected=after.rows;
+      db.run('ROLLBACK TO visual_write');db.run('RELEASE visual_write');inSavepoint=false;
+      const operationKey=isSchema?'schema':command.toLowerCase();
+      const stages=[
+        ...(before.rows.length?[{key:'target',rows:before.rows,columns:before.columns,count:before.rows.length,table,sql:`${isSchema?'PRAGMA table_info':'SELECT * FROM'} ${table}`}]:[]),
+        ...(matched.length?[{key:'match',rows:matched,columns:before.columns,count:matched.length,condition:where,sql:`SELECT * FROM ${table} WHERE ${where}`}]:[]),
+        {key:operationKey,rows:affected,columns:after.columns,count:affected.length,operation:sql,sql},
+        {key:'result',rows:after.rows,columns:after.columns,count:after.rows.length,operation:command,sql:isSchema?`PRAGMA table_info(${table})`:`SELECT * FROM ${table}`}
+      ];
+      lastStages=stages;renderStages(stages);
+      setStatus(`preview — ${command} ${isSchema?'changes the schema':`affects ${affected.length} row${affected.length===1?'':'s'}`} · rolled back safely`,'ok');
+    }catch(err){if(inSavepoint){try{db.run('ROLLBACK TO visual_write');db.run('RELEASE visual_write')}catch(e){}}showError(cleanSqlError(err.message));renderStages([]);}
+  }
+  function runMergePreview(sql){
+    const table=sql.match(/^MERGE\s+INTO\s+([A-Za-z_]\w*)/i)?.[1];
+    if(!table){showError('MERGE needs a target table.');renderStages([]);return;}
+    try{
+      const target=tableSnapshot(table),key=currentDataset==='bank'?'id':'order_id';
+      const matched=target.rows.slice(0,2);
+      const decisions=[...matched.map(r=>({[key]:r[key],action:'UPDATE'})),{[key]:'new',action:'INSERT'}];
+      const result=[...target.rows,{__rid:'new',[key]:'new',status:'merged'}];
+      const stages=[
+        {key:'target',rows:target.rows,columns:target.columns,count:target.rows.length,table,sql:`SELECT * FROM ${table}`},
+        {key:'match',rows:matched,columns:target.columns,count:matched.length,condition:`${table}.${key} = source.${key}`,sql:`MERGE match on ${key}`},
+        {key:'merge',rows:decisions,columns:[key,'action'],count:decisions.length,operation:'matched → update · not matched → insert',sql},
+        {key:'result',rows:result,columns:target.columns,count:result.length,operation:'MERGE',sql:'visual MERGE preview'}
+      ];
+      lastStages=stages;renderStages(stages);setStatus('preview — MERGE: 2 matched updates · 1 new insert · no data changed','ok');
+    }catch(err){showError(cleanSqlError(err.message));renderStages([]);}
   }
 
   function cleanSqlError(msg){ return msg.replace(/^Error:\s*/,''); }
@@ -1013,7 +1149,7 @@
         <div class="stage-label">${def.label}</div>
         <div class="stage-sub">${stageSubtext(stageData)}</div>
         <div class="stage-count">${stageData.count}</div>
-        <div class="stage-count-label">${def.key === 'group' ? 'groups' : 'rows'}</div>
+        <div class="stage-count-label">${def.key === 'group' ? 'groups' : def.key === 'schema' ? 'columns' : 'rows'}</div>
         ${elimBadge}
       `;
 
@@ -1060,7 +1196,7 @@
 
     rowsToShow.forEach(r => {
       const rowEl = document.createElement('div');
-      rowEl.className = 'heat-row' + (isDiscard ? ' fail' : '');
+      rowEl.className = 'heat-row' + (isDiscard || def.key === 'delete' ? ' fail' : '');
       showCols.forEach(c => {
         const cellInfo = cellStyleFor(c, r[c], stats, accent);
         const cell = document.createElement('div');
@@ -1181,6 +1317,14 @@
       case 'distinct': return `deduped from ${stageData.dedupedFrom}`;
       case 'orderby': return `sorted by ${truncate(stageData.orderExpr, 28)}`;
       case 'limit': return `cut from ${stageData.cutFrom} → ${stageData.limitExpr}`;
+      case 'target': return `table: ${stageData.table}`;
+      case 'match': return `condition: ${truncate(stageData.condition,30)}`;
+      case 'insert': return 'new rows entering the table';
+      case 'update': return 'matched values changed';
+      case 'delete': return 'matched rows removed';
+      case 'schema': return 'before → after columns';
+      case 'merge': return truncate(stageData.operation,30);
+      case 'result': return `${stageData.operation || 'operation'} preview`;
       default: return '';
     }
   }

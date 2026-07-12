@@ -74,7 +74,7 @@
   .more-sql-menu button:hover{ border-color:var(--c-group); color:var(--c-group); background:var(--c-group-bg); }
 
   /* ---------- performance lab ---------- */
-  .performance-panel{ margin:14px 28px 2px; background:#fff; border:1.5px solid var(--line-strong); border-radius:16px; padding:16px; box-shadow:0 10px 32px rgba(35,31,24,.07); }
+  .performance-panel{ margin:14px 28px 2px; scroll-margin-top:285px; background:#fff; border:1.5px solid var(--line-strong); border-radius:16px; padding:16px; box-shadow:0 10px 32px rgba(35,31,24,.07); }
   .performance-panel[hidden]{ display:none; }
   .performance-head{ display:flex; justify-content:space-between; align-items:flex-start; gap:16px; margin-bottom:14px; }
   .performance-title{ font:700 14px var(--sora); color:var(--ink); }
@@ -101,6 +101,50 @@
   .partition-rows{ font:9px var(--mono); color:var(--ink-faint); }
   .pruned-badge{ position:absolute; top:8px; right:8px; font:8px var(--mono); color:var(--c-limit); }
   .perf-note{ margin-top:10px; font:10px/1.5 var(--mono); color:var(--ink-faint); }
+
+  /* signature performance workbench */
+  .perf-story{ display:grid; grid-template-columns:1fr 54px 1fr; gap:12px; align-items:stretch; }
+  .workbench{ position:relative; overflow:hidden; border:1px solid var(--line); border-radius:14px; padding:14px; background:var(--paper-2); min-height:250px; }
+  .workbench.good{ background:var(--c-select-bg); border-color:rgba(13,148,136,.38); }
+  .workbench-kicker{ font:700 10px var(--sora); text-transform:uppercase; letter-spacing:.065em; color:var(--ink-dim); }
+  .workbench h4{ margin:5px 0 3px; font:700 15px var(--sora); color:var(--ink); }
+  .workbench-copy{ min-height:34px; font:10.5px/1.5 var(--mono); color:var(--ink-faint); }
+  .row-blocks{ position:relative; display:grid; grid-template-columns:repeat(9,1fr); gap:5px; margin-top:14px; padding:11px; background:#fff; border:1px solid var(--line); border-radius:10px; }
+  .row-block{ height:24px; display:flex; align-items:center; justify-content:center; border-radius:5px; background:var(--c-from-bg); color:var(--c-from); font:700 8px var(--mono); border:1px solid rgba(100,116,139,.15); transition:.4s ease; animation:blockWake .55s ease both; animation-delay:calc(var(--i) * 45ms); }
+  @keyframes blockWake{ from{ opacity:.2; transform:scale(.75); } to{ opacity:1; transform:scale(1); } }
+  .row-block.checked{ background:var(--c-where-bg); color:var(--c-where); border-color:rgba(224,138,44,.3); }
+  .row-block.hit{ background:var(--c-select-bg); color:var(--c-select); border-color:rgba(13,148,136,.4); box-shadow:0 0 0 2px rgba(13,148,136,.08); }
+  .row-block.skipped{ opacity:.18; filter:grayscale(1); }
+  .scan-beam{ position:absolute; z-index:4; top:8px; bottom:8px; width:3px; border-radius:4px; background:var(--c-where); box-shadow:0 0 12px rgba(224,138,44,.7); animation:scanAll 2.4s ease-in-out infinite; }
+  @keyframes scanAll{ 0%{left:10px;opacity:0} 10%{opacity:1} 90%{opacity:1} 100%{left:calc(100% - 13px);opacity:0} }
+  .btree{ display:flex; flex-direction:column; align-items:center; gap:6px; margin:12px 0 4px; }
+  .tree-level{ display:flex; align-items:center; justify-content:center; gap:8px; }
+  .tree-node{ min-width:46px; padding:5px 8px; text-align:center; border-radius:7px; border:1px solid var(--line-strong); background:#fff; color:var(--ink-dim); font:9px var(--mono); transition:.3s ease; }
+  .tree-node.path{ border-color:var(--c-group); background:var(--c-group-bg); color:var(--c-group); box-shadow:0 0 0 2px rgba(139,92,246,.1); }
+  .tree-arrow{ color:var(--c-group); font:12px var(--mono); animation:arrowPulse 1.1s ease infinite; }
+  @keyframes arrowPulse{50%{transform:translateY(2px);opacity:.45}}
+  .work-score{ display:flex; align-items:flex-end; justify-content:space-between; gap:10px; margin-top:12px; padding-top:10px; border-top:1px dashed var(--line-strong); }
+  .work-score strong{ font:800 30px var(--sora); color:var(--ink); line-height:1; }
+  .work-score span{ font:9px/1.4 var(--mono); color:var(--ink-faint); }
+  .story-arrow{ display:flex; flex-direction:column; align-items:center; justify-content:center; color:var(--c-select); font:700 20px var(--mono); }
+  .story-arrow small{ writing-mode:vertical-rl; transform:rotate(180deg); margin-top:7px; font:8px var(--mono); color:var(--ink-faint); }
+  .plain-lesson{ margin-top:12px; display:flex; align-items:flex-start; gap:10px; padding:11px 13px; border-radius:11px; background:#fff; border:1px solid var(--line); }
+  .plain-lesson .lesson-icon{ flex:none; width:28px; height:28px; display:grid; place-items:center; border-radius:50%; background:var(--c-where-bg); color:var(--c-where); font:700 13px var(--sora); }
+  .plain-lesson b{ display:block; margin-bottom:3px; font:700 11px var(--sora); color:var(--ink); }
+  .plain-lesson span{ font:10px/1.55 var(--mono); color:var(--ink-dim); }
+  .storage-scene{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:12px; }
+  .storage-bin{ position:relative; min-height:160px; padding:12px 9px 9px; border:1px solid var(--line); border-radius:12px; background:var(--c-group-bg); overflow:hidden; transition:.45s cubic-bezier(.22,.8,.32,1); }
+  .storage-bin.open{ border-color:var(--c-group); box-shadow:0 0 0 3px rgba(139,92,246,.11); transform:translateY(-3px); }
+  .storage-bin.closed{ opacity:.22; filter:grayscale(.85); transform:scale(.96); }
+  .bin-lid{ height:8px; margin:-4px 0 10px; border-radius:5px; background:var(--c-group); transform-origin:left; transition:.45s ease; }
+  .storage-bin.open .bin-lid{ transform:rotate(-5deg) translateY(-4px); }
+  .bin-key{ font:700 9px var(--mono); color:var(--c-group); }
+  .bin-rows{ display:grid; grid-template-columns:repeat(2,1fr); gap:4px; margin-top:10px; }
+  .bin-row{ height:13px; border-radius:3px; background:rgba(139,92,246,.22); animation:blockWake .45s ease both; }
+  .bin-state{ position:absolute; bottom:8px; left:9px; right:9px; text-align:center; font:8px var(--mono); color:var(--ink-faint); }
+  .saving-banner{ display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:12px; padding:12px 14px; border-radius:12px; background:var(--c-select-bg); border:1px solid rgba(13,148,136,.28); }
+  .saving-banner b{ font:800 20px var(--sora); color:var(--c-select); }
+  .saving-banner span{ font:10px/1.5 var(--mono); color:var(--ink-dim); }
 
   .editor-row{ display:flex; gap:10px; }
   .editor-wrap{
@@ -366,8 +410,10 @@
     .side-controls{ flex-direction:row; }
     .performance-panel{ margin:10px 14px; }
     .performance-head{ flex-direction:column; }
-    .perf-summary{ grid-template-columns:1fr; }.perf-arrow{ transform:rotate(90deg); }
+    .perf-summary,.perf-story{ grid-template-columns:1fr; }.perf-arrow{ transform:rotate(90deg); }
+    .story-arrow{ transform:rotate(90deg); min-height:38px; }.story-arrow small{display:none;}
     .partition-grid{ grid-template-columns:repeat(2,1fr); }
+    .storage-scene{ grid-template-columns:repeat(2,1fr); }
   }
 </style>
 </head>
@@ -418,7 +464,7 @@
 </header>
 
 <section class="performance-panel" id="performancePanel" aria-label="SQL performance visualizer" hidden>
-  <div class="performance-head"><div><div class="performance-title">Performance lab</div><div class="performance-sub">See how physical access strategies change the work behind the same SQL result.</div></div><div class="performance-controls"><button class="perf-tab active" data-perf-mode="index">INDEX</button><button class="perf-tab" data-perf-mode="partition">PARTITION</button><label class="perf-switch"><input type="checkbox" id="perfEnabled" checked> optimization on</label><button class="perf-close" id="perfClose" aria-label="Close performance lab">✕</button></div></div>
+  <div class="performance-head"><div><div class="performance-title">Performance lab</div><div class="performance-sub">See what the database physically reads—and what optimization lets it skip.</div></div><div class="performance-controls"><button class="perf-tab active" data-perf-mode="index">INDEX</button><button class="perf-tab" data-perf-mode="partition">PARTITION</button><label class="perf-switch"><input type="checkbox" id="perfEnabled" checked> <span id="perfSwitchLabel">optimization on</span></label><button class="perf-close" id="perfClose" aria-label="Close performance lab">✕</button></div></div>
   <div id="performanceVisual"></div>
 </section>
 
@@ -673,10 +719,10 @@
     wrap.append(toggle,menu);
     row.appendChild(wrap);
     const perf=document.createElement('button');
-    perf.className='ex-btn';perf.id='performanceToggle';perf.textContent='performance ⚡';perf.setAttribute('aria-expanded','false');
+    perf.className='ex-btn';perf.id='performanceToggle';perf.textContent='performance lab ⚡';perf.setAttribute('aria-expanded','false');
     perf.addEventListener('click',()=>{
       const panel=el('performancePanel'),opening=panel.hidden;panel.hidden=!opening;perf.setAttribute('aria-expanded',String(opening));
-      if(opening)renderPerformance(el('queryInput').value);
+      if(opening){renderPerformance(el('queryInput').value);requestAnimationFrame(()=>panel.scrollIntoView({behavior:'smooth',block:'start'}));}
     });
     row.appendChild(perf);
   }
@@ -690,7 +736,7 @@
     document.querySelectorAll('[data-perf-mode]').forEach(b=>b.classList.toggle('active',b===btn));
     renderPerformance(el('queryInput').value);
   }));
-  el('perfEnabled').addEventListener('change',()=>renderPerformance(el('queryInput').value));
+  el('perfEnabled').addEventListener('change',()=>{el('perfSwitchLabel').textContent=el('perfEnabled').checked?'optimization on':'optimization off';renderPerformance(el('queryInput').value);});
   el('perfClose').addEventListener('click',()=>{el('performancePanel').hidden=true;el('performanceToggle')?.setAttribute('aria-expanded','false');});
 
   el('queryInput').addEventListener('input', () => {
@@ -945,7 +991,7 @@
     if(!table){visual.innerHTML='<div class="perf-note">Add a FROM clause to inspect the access plan.</div>';return;}
     try{
       const total=exec(`SELECT COUNT(*) AS n FROM ${table}`).rows[0][0];
-      let matched=total;try{if(where)matched=exec(`SELECT COUNT(*) AS n FROM ${table} WHERE ${where}`).rows[0][0]}catch(e){}
+      let matched=total,matchingIds=[];try{if(where){matched=exec(`SELECT COUNT(*) AS n FROM ${table} WHERE ${where}`).rows[0][0];matchingIds=exec(`SELECT rowid FROM ${table} WHERE ${where}`).rows.map(r=>Number(r[0]));}}catch(e){}
       const beforePlan=queryPlan(sql);let afterPlan=beforePlan,indexUsable=false;
       if(column&&/^[A-Za-z_]\w*$/.test(column)){
         const schema=schemaSnapshot(table).rows.map(r=>r.name);
@@ -954,8 +1000,9 @@
           try{db.run(`CREATE INDEX __visual_${table}_${column} ON ${table}(${column})`);afterPlan=queryPlan(sql);indexUsable=true;}finally{db.run('ROLLBACK TO perf_index');db.run('RELEASE perf_index');}
         }
       }
-      const enabled=el('perfEnabled').checked,afterScan=enabled&&indexUsable?matched:total;
-      visual.innerHTML=`<div class="perf-summary"><div class="perf-card"><div class="perf-card-label">without index</div><div class="perf-big">${total}</div><div class="perf-caption">rows considered from ${escapeHtml(table)}</div><div class="perf-plan">${escapeHtml(beforePlan)}</div></div><div class="perf-arrow">→</div><div class="perf-card ${enabled&&indexUsable?'optimized':''}"><div class="perf-card-label">${enabled?'with temporary index':'optimization off'}</div><div class="perf-big">${afterScan}</div><div class="perf-caption">${indexUsable?`rows matching via ${escapeHtml(column)} lookup`:'add a simple WHERE condition to demonstrate an index seek'}</div><div class="perf-plan">${escapeHtml(enabled?afterPlan:beforePlan)}</div></div></div><div class="perf-note">The comparison uses SQLite EXPLAIN QUERY PLAN. The teaching index exists only inside a rolled-back savepoint.</div>`;
+      const enabled=el('perfEnabled').checked,useIndex=enabled&&indexUsable,indexHops=Math.max(1,Math.ceil(Math.log2(Math.max(total,2)))),saved=Math.max(0,total-matched);
+      const blocks=(mode)=>Array.from({length:Math.min(total,27)},(_,i)=>{const id=i+1,hit=matchingIds.includes(id);const cls=mode==='all'?'checked':useIndex?(hit?'hit':'skipped'):'checked';return`<div class="row-block ${cls}" style="--i:${i}">${id}</div>`}).join('');
+      visual.innerHTML=`<div class="saving-banner"><span><b>${useIndex&&indexUsable?`${saved} table rows skipped`:'Watch the work, not just the answer'}</b><br>${useIndex&&indexUsable?'The result is identical. The database takes a shorter path to find it.':'Turn optimization on to compare the physical work behind this query.'}</span><span>${escapeHtml(where||'Add a WHERE condition')}</span></div><div class="perf-story"><div class="workbench"><div class="workbench-kicker">without an index</div><h4>Read every row, one by one</h4><div class="workbench-copy">Like finding a name in an unsorted notebook: start at page one and check every line.</div><div class="row-blocks"><i class="scan-beam"></i>${blocks('all')}</div><div class="work-score"><div><strong>${total}</strong><br><span>table rows checked</span></div><div class="perf-plan">${escapeHtml(beforePlan)}</div></div></div><div class="story-arrow">→<small>same SQL, less work</small></div><div class="workbench ${useIndex?'good':''}"><div class="workbench-kicker">${useIndex?'with an index':'optimization off'}</div><h4>${useIndex?'Follow the index, then jump':'Still reading every row'}</h4><div class="workbench-copy">${indexUsable?'The index is a sorted map. Follow a few branches, then jump directly to matching table rows.':'Use a simple WHERE condition so an index can point to matching values.'}</div>${useIndex?`<div class="btree"><div class="tree-level"><span class="tree-node path">${escapeHtml(column)}</span></div><div class="tree-arrow">↓</div><div class="tree-level"><span class="tree-node">low</span><span class="tree-node path">${escapeHtml(where||'match')}</span><span class="tree-node">high</span></div><div class="tree-arrow">↓ jump to rows</div></div>`:''}<div class="row-blocks">${blocks('index')}</div><div class="work-score"><div><strong>${useIndex?`${indexHops} + ${matched}`:total}</strong><br><span>${useIndex?'index hops + matching row reads':'table rows checked'}</span></div><div class="perf-plan">${escapeHtml(useIndex?afterPlan:beforePlan)}</div></div></div></div><div class="plain-lesson"><div class="lesson-icon">i</div><div><b>What changed?</b><span>The SQL and result did not change. The index changed how SQLite found the rows. It avoided opening ${saved} unrelated table rows.${indexUsable?' The plan changed from SCAN to SEARCH.':''}</span></div></div>`;
     }catch(err){visual.innerHTML=`<div class="perf-note">Could not explain this query: ${escapeHtml(cleanSqlError(err.message))}</div>`;}
   }
   function renderPartitionPerformance(sql,visual){
@@ -966,7 +1013,9 @@
       const targetMatch=sql.match(new RegExp(`(?:\\w+\\.)?${config.column}\\s*=\\s*(\\d+)`,'i'));
       const target=targetMatch?Number(targetMatch[1]):null,enabled=el('perfEnabled').checked,total=[...counts.values()].reduce((a,b)=>a+b,0);
       const scanned=enabled&&target!==null?(counts.get(target)||0):total;
-      visual.innerHTML=`<div class="perf-summary" style="grid-template-columns:1fr 52px 1fr;margin-bottom:12px"><div class="perf-card"><div class="perf-card-label">all partitions</div><div class="perf-big">${total}</div><div class="perf-caption">rows scanned without pruning</div></div><div class="perf-arrow">→</div><div class="perf-card ${enabled&&target!==null?'optimized':''}"><div class="perf-card-label">${enabled?'partition pruning on':'optimization off'}</div><div class="perf-big">${scanned}</div><div class="perf-caption">${target!==null?`query targets ${config.column} = ${target}`:`add WHERE ${config.column} = 1 to prune partitions`}</div></div></div><div class="partition-grid">${config.keys.map(k=>{const pruned=enabled&&target!==null&&k!==target;return`<div class="partition-card ${pruned?'pruned':'scanned'}"><div class="partition-key">${config.column} = ${k}</div><div class="partition-count">${counts.get(k)||0}</div><div class="partition-rows">rows in partition</div>${pruned?'<div class="pruned-badge">skipped</div>':''}</div>`}).join('')}</div><div class="perf-note">Concept simulation: SQLite does not provide native table partitioning. The cards demonstrate how engines with partition pruning skip unrelated physical segments. ${target===null?'<button class="perf-tab" id="partitionDemo">try pruning example</button>':''}</div>`;
+      const pruning=enabled&&target!==null,avoided=total-scanned;
+      const bins=config.keys.map(k=>{const open=!pruning||k===target,count=counts.get(k)||0;return`<div class="storage-bin ${open?'open':'closed'}"><div class="bin-lid"></div><div class="bin-key">${config.column} = ${k}</div><div class="bin-rows">${Array.from({length:Math.min(count,8)},(_,i)=>`<i class="bin-row" style="animation-delay:${i*55}ms"></i>`).join('')}</div><div class="bin-state">${open?`OPEN · scan ${count} rows`:'CLOSED · 0 rows read'}</div></div>`}).join('');
+      visual.innerHTML=`<div class="saving-banner"><span><b>${pruning?`${avoided} rows never opened`:'All storage segments are open'}</b><br>${pruning?'The partition key tells the database exactly which drawer contains the answer.':'Add a partition-key filter or try the example to see pruning.'}</span><span>${target!==null?`${config.column} = ${target}`:'no partition key filter'}</span></div><div class="perf-story"><div class="workbench"><div class="workbench-kicker">without pruning</div><h4>Open every storage drawer</h4><div class="workbench-copy">The database checks all four segments because it does not use the partition key to narrow the search.</div><div class="row-blocks">${config.keys.map((k,i)=>`<div class="row-block checked" style="--i:${i}">P${k}</div>`).join('')}</div><div class="work-score"><div><strong>${total}</strong><br><span>rows read across 4 drawers</span></div></div></div><div class="story-arrow">→<small>route by partition key</small></div><div class="workbench ${pruning?'good':''}"><div class="workbench-kicker">${pruning?'with partition pruning':'optimization off'}</div><h4>${pruning?'Open one matching drawer':'All drawers still open'}</h4><div class="workbench-copy">${target!==null?`The query asks for ${config.column} = ${target}. The router sends it directly to partition ${target}.`:`The query does not mention ${config.column}, so the database cannot know which drawer to open.`}</div><div class="row-blocks">${config.keys.map((k,i)=>`<div class="row-block ${pruning?(k===target?'hit':'skipped'):'checked'}" style="--i:${i}">P${k}</div>`).join('')}</div><div class="work-score"><div><strong>${scanned}</strong><br><span>rows read from ${pruning?'1 drawer':'4 drawers'}</span></div></div></div></div><div class="storage-scene">${bins}</div><div class="plain-lesson"><div class="lesson-icon">P</div><div><b>What is a partition?</b><span>It is a physical drawer for rows sharing the same key. Here, ${config.column} decides the drawer. Pruning means leaving unrelated drawers closed.${target===null?' ':''}</span>${target===null?'<button class="perf-tab" id="partitionDemo">show me with '+config.column+' = 1</button>':''}</div></div><div class="perf-note">Concept simulation: SQLite does not provide native table partitioning; this teaches the storage behavior used by partition-aware database engines.</div>`;
       el('partitionDemo')?.addEventListener('click',()=>{const q=`SELECT * FROM ${config.table} WHERE ${config.column} = 1;`;el('queryInput').value=q;updateUrlHash(q);runPipeline();});
     }catch(err){visual.innerHTML=`<div class="perf-note">Could not build the partition model: ${escapeHtml(cleanSqlError(err.message))}</div>`;}
   }

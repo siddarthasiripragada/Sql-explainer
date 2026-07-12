@@ -295,6 +295,24 @@
   }
   .error-panel b{ display:block; margin-bottom:4px; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; }
 
+  /* ---------- final result ---------- */
+  #finalChartHolder{ padding:18px 28px 8px; }
+  .final-result{ max-width:980px; background:#fff; border:1.5px solid var(--line-strong); border-radius:16px; overflow:hidden; box-shadow:0 8px 28px rgba(35,31,24,.06); }
+  .final-result-head{ display:flex; justify-content:space-between; align-items:center; gap:16px; padding:13px 16px; background:var(--paper-2); border-bottom:1px solid var(--line); }
+  .final-result-title{ font:700 13px var(--sora); color:var(--ink); }
+  .final-result-meta{ font:10.5px var(--mono); color:var(--ink-faint); }
+  .final-result-scroll{ overflow:auto; max-height:390px; }
+  .final-result table{ width:100%; border-collapse:collapse; table-layout:fixed; font:11px var(--mono); }
+  .final-result th{ position:sticky; top:0; z-index:2; padding:9px 12px; text-align:left; color:var(--ink-dim); background:#faf8f2; border-bottom:1.5px solid var(--line-strong); text-transform:uppercase; letter-spacing:.045em; font-size:9.5px; }
+  .final-result td{ position:relative; padding:8px 12px; border-bottom:1px solid var(--line); color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .final-result tbody tr:hover td{ background:rgba(13,148,136,.055); }
+  .final-result .number{ text-align:right; font-variant-numeric:tabular-nums; }
+  .final-result .null{ color:var(--ink-faint); font-style:italic; }
+  .result-meter{ position:absolute; inset:3px auto 3px 5px; border-radius:5px; background:var(--c-select-bg); opacity:.75; pointer-events:none; }
+  .result-value{ position:relative; z-index:1; }
+  .result-lineage{ display:inline-block; width:6px; height:6px; border-radius:50%; margin-right:7px; vertical-align:middle; }
+  .final-result-more{ padding:9px 14px; text-align:center; background:var(--paper-2); color:var(--ink-faint); font:10px var(--mono); }
+
   hr.divider{ border:none; border-top:1px solid var(--line); margin: 0 28px; }
 
   article{ max-width:740px; margin:0 auto; padding:56px 24px 100px; }
@@ -314,6 +332,8 @@
     .ribbon-wrap{ width:100%; height:34px; }
     .stage-band,.stage-band[data-stage-key="group"]{ min-width:0; max-width:none; width:100%; }
     .editor-row{ flex-direction:column; }
+    #finalChartHolder{ padding:14px; }
+    .final-result table{ min-width:680px; }
     .side-controls{ flex-direction:row; }
   }
 </style>
@@ -1105,37 +1125,35 @@
   /* ============================================================
      RENDERING — stage bands + flowing ribbons
   ============================================================ */
-  /* ---------- final ranked bar chart (the "probabilities" payoff) ---------- */
+  /* ---------- aligned final result grid ---------- */
   function renderFinalChart(stages){
     const holder = el('finalChartHolder');
     const final = stages[stages.length - 1];
     if (!final || !final.rows.length){ holder.innerHTML = ''; return; }
 
-    const cols = (final.columns || Object.keys(final.rows[0])).filter(c => c !== '__rid' && c !== '__members');
-    const numCol = cols.find(c => typeof final.rows[0][c] === 'number' && final.rows.some(r => typeof r[c] === 'number'));
-    if (!numCol){ holder.innerHTML = ''; return; }
-    const labelCol = cols.find(c => c !== numCol) || cols[0];
-
-    const rows = final.rows.filter(r => typeof r[numCol] === 'number').slice(0, 12);
-    if (rows.length < 2){ holder.innerHTML = ''; return; }
-    const maxVal = Math.max(...rows.map(r => Math.abs(r[numCol])));
-
-    let html = `<div class="final-chart"><div class="final-chart-title">final result, ranked by <b>${escapeHtml(numCol)}</b></div>`;
-    rows.forEach((r, i) => {
-      const pct = maxVal > 0 ? (Math.abs(r[numCol]) / maxVal) * 100 : 0;
-      html += `
-        <div class="bar-row">
-          <div class="bar-label">${escapeHtml(formatVal(r[labelCol]))}</div>
-          <div class="bar-track"><div class="bar-fill" style="width:0%;transition-delay:${i*60}ms;" data-pct="${pct}"></div></div>
-          <div class="bar-value">${formatVal(r[numCol])}</div>
-        </div>`;
+    const cols=(final.columns||Object.keys(final.rows[0])).filter(c=>!c.startsWith('__')).slice(0,8);
+    const rows=final.rows.slice(0,30);
+    const orderStage=stages.find(s=>s.key==='orderby');
+    const numericCols=new Set(cols.filter(c=>final.rows.some(r=>typeof r[c]==='number')));
+    const metricCols=new Set([...numericCols].filter(c=>!/(^id$|_id$)/i.test(c)));
+    const maxima=Object.fromEntries([...metricCols].map(c=>[c,Math.max(0,...final.rows.filter(r=>typeof r[c]==='number').map(r=>Math.abs(r[c])))]));
+    let html=`<section class="final-result" aria-label="Final query result"><div class="final-result-head"><div class="final-result-title">Final result</div><div class="final-result-meta">${final.rows.length} row${final.rows.length===1?'':'s'}${orderStage?` · ordered by ${escapeHtml(orderStage.orderExpr)}`:''}</div></div><div class="final-result-scroll"><table><thead><tr>`;
+    html+=cols.map(c=>`<th class="${numericCols.has(c)?'number':''}">${escapeHtml(c)}</th>`).join('');
+    html+='</tr></thead><tbody>';
+    rows.forEach((row,rowIndex)=>{
+      html+='<tr>';
+      cols.forEach((c,colIndex)=>{
+        const value=row[c],numeric=typeof value==='number',isNull=value===null||value===undefined;
+        const pct=metricCols.has(c)&&maxima[c]>0?Math.min(100,Math.abs(value)/maxima[c]*100):0;
+        const lineage=row.__lineage||(row.__rid!==undefined?`r:${row.__rid}`:null);
+        html+=`<td class="${numeric?'number':''} ${isNull?'null':''}" title="${escapeHtml(c)}: ${escapeHtml(formatVal(value))}">${pct?`<span class="result-meter" style="width:${pct}%"></span>`:''}<span class="result-value">${colIndex===0&&lineage?`<i class="result-lineage" style="background:${lineageColor(lineage)}"></i>`:''}${escapeHtml(formatVal(value))}</span></td>`;
+      });
+      html+='</tr>';
     });
-    html += '</div>';
-    holder.innerHTML = html;
-
-    requestAnimationFrame(() => {
-      document.querySelectorAll('.bar-fill').forEach(el => { el.style.width = el.dataset.pct + '%'; });
-    });
+    html+='</tbody></table></div>';
+    if(final.rows.length>rows.length)html+=`<div class="final-result-more">+ ${final.rows.length-rows.length} more rows · open the final stage for the full grid</div>`;
+    html+='</section>';
+    holder.innerHTML=html;
   }
 
   function renderStages(stages, joinInfo){

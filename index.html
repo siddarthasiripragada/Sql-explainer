@@ -137,6 +137,13 @@
   }
   .pb-btn:hover{ border-color: var(--c-where); color: var(--c-where); }
   .pb-btn.playing{ border-color: var(--c-select); color: var(--c-select); }
+  .tour-focus{ position:relative; z-index:91!important; box-shadow:0 0 0 4px var(--c-where-bg),0 0 0 6px var(--c-where)!important; }
+  .tour-popover{ position:fixed; z-index:95; right:22px; bottom:22px; width:min(330px,calc(100vw - 44px)); display:none; background:#fff; border:1px solid var(--line-strong); border-radius:14px; padding:16px; box-shadow:0 16px 45px rgba(35,31,24,.18); }
+  .tour-popover.show{ display:block; animation:rowEnter .35s ease both; }
+  .tour-popover b{ display:block; font:700 13px var(--sora); color:var(--ink); margin-bottom:6px; }
+  .tour-popover p{ margin:0 0 12px; font:12px/1.55 var(--mono); color:var(--ink-dim); }
+  .tour-actions{ display:flex; justify-content:space-between; align-items:center; }
+  .tour-actions button{ border:1px solid var(--line-strong); background:var(--paper-2); border-radius:8px; padding:6px 10px; font:10.5px var(--mono); cursor:pointer; }
   .speed-wrap{ display:flex; align-items:center; gap:8px; font-family: var(--mono); font-size:11px; color: var(--ink-dim); }
   .speed-wrap input[type=range]{ width:90px; accent-color: var(--c-where); }
   .stage-crumbs{ display:flex; gap:5px; flex:1; overflow-x:auto; }
@@ -169,8 +176,14 @@
   .row-stack{ display:flex; flex-direction:column; gap:3px; max-height:210px; overflow-y:auto; overflow-x:hidden; padding:2px 7px 2px 2px; }
   .heat-row{
     display:flex; gap:2px; border-radius:5px; overflow:hidden; height:19px;
-    transition: transform .25s ease, opacity .3s ease; position:relative;
+    transition: transform .25s ease, opacity .3s ease, box-shadow .25s ease; position:relative;
+    animation:rowEnter .48s cubic-bezier(.22,.8,.32,1) both;
   }
+  @keyframes rowEnter{ from{ opacity:0; transform:translateX(-7px) scale(.97); } to{ opacity:1; transform:none; } }
+  .pipeline-inner.lineage-active .heat-row[data-lineage]:not(.lineage-match){ opacity:.16; filter:saturate(.35); }
+  .heat-row.lineage-match{ opacity:1!important; filter:none!important; transform:translateX(3px); box-shadow:0 0 0 2px rgba(13,148,136,.42); z-index:25; }
+  .lineage-label{ position:fixed; z-index:290; left:50%; bottom:18px; transform:translateX(-50%); display:none; padding:7px 12px; border-radius:16px; background:#fff; border:1px solid var(--line-strong); box-shadow:0 8px 24px rgba(35,31,24,.12); font:10.5px var(--mono); color:var(--ink-dim); }
+  .lineage-label.show{ display:block; }
   .heat-row.fail{ opacity:.32; filter: saturate(0.3); }
   .heat-cell{
     flex:1; min-width:16px; display:flex; align-items:center; justify-content:center;
@@ -231,6 +244,11 @@
   .ribbon-wrap{ flex:none; width:52px; position:relative; align-self:stretch; }
   .ribbon-wrap svg{ width:100%; height:100%; overflow:visible; }
   .ribbon-particle{ opacity:0.9; }
+
+  @media (prefers-reduced-motion: reduce){
+    *,*::before,*::after{ animation-duration:.01ms!important; animation-iteration-count:1!important; scroll-behavior:auto!important; transition-duration:.01ms!important; }
+    .ribbon-particle{ display:none; }
+  }
 
   /* ---------- tooltip ---------- */
   .tooltip{
@@ -304,6 +322,7 @@
 
 <div id="loadingOverlay"><div class="spinner"></div><p>booting sqlite (wasm)…</p></div>
 <div class="tooltip" id="tooltip"></div>
+<div class="lineage-label" id="lineageLabel" aria-live="polite"></div>
 
 <div id="detailOverlay">
   <div id="detailCard">
@@ -348,16 +367,18 @@
 <section class="diagram-section">
   <div class="playback-row" id="sliderRow" style="display:none;"></div>
   <div class="playback-row">
-    <button class="pb-btn" id="playBtn" title="Play walkthrough">▶</button>
-    <button class="pb-btn" id="stepBackBtn" title="Step back">⏮</button>
-    <button class="pb-btn" id="stepFwdBtn" title="Step forward">⏭</button>
-    <div class="speed-wrap">speed <input type="range" id="speedSlider" min="1" max="5" value="3"></div>
+    <button class="pb-btn" id="playBtn" title="Play walkthrough" aria-label="Play or pause walkthrough">▶</button>
+    <button class="pb-btn" id="stepBackBtn" title="Step back" aria-label="Previous execution stage">⏮</button>
+    <button class="pb-btn" id="stepFwdBtn" title="Step forward" aria-label="Next execution stage">⏭</button>
+    <button class="pb-btn" id="tourBtn" title="Guided tour" aria-label="Start guided tour">?</button>
+    <div class="speed-wrap">speed <input type="range" id="speedSlider" min="0" max="4" step="1" value="2" aria-label="Playback speed"><b id="speedValue">1×</b></div>
     <div class="stage-crumbs" id="stageCrumbs"></div>
   </div>
-  <div id="pipelineOuter"><div class="pipeline-inner" id="pipelineInner"></div></div>
+<div id="pipelineOuter"><div class="pipeline-inner" id="pipelineInner"></div></div>
   <div id="finalChartHolder"></div>
   <div id="errorHolder"></div>
 </section>
+<div class="tour-popover" id="tourPopover" role="dialog" aria-live="polite"><b id="tourTitle"></b><p id="tourText"></p><div class="tour-actions"><span id="tourProgress"></span><div><button id="tourClose">close</button> <button id="tourNext">next →</button></div></div></div>
 
 <hr class="divider">
 
@@ -824,6 +845,15 @@
   function rowsToObjects(cols, rows){
     return rows.map(r => { const o = {}; cols.forEach((c,i) => o[c]=r[i]); return o; });
   }
+  function rowSignature(row){
+    return JSON.stringify(Object.fromEntries(Object.entries(row).filter(([k])=>!k.startsWith('__'))));
+  }
+  function carryLineage(rows, sourceRows){
+    const buckets=new Map();
+    sourceRows.forEach(r=>{const k=rowSignature(r);if(!buckets.has(k))buckets.set(k,[]);buckets.get(k).push(r.__lineage||`r:${r.__rid}`);});
+    rows.forEach((r,i)=>{const exact=buckets.get(rowSignature(r));r.__lineage=exact?.shift()||sourceRows[i]?.__lineage||`stage:${i}`;});
+    return rows;
+  }
 
   /* ============================================================
      BUILD & RUN CUMULATIVE PIPELINE QUERIES (real, per stage)
@@ -864,6 +894,7 @@
       const fromSQL = `SELECT *, ROW_NUMBER() OVER () AS __rid FROM ${clauses.from}`;
       const fromRes = exec(fromSQL);
       const fromRows = rowsToObjects(fromRes.columns, fromRes.rows);
+      fromRows.forEach(r=>r.__lineage=`r:${r.__rid}`);
       stages.push({ key:'from', rows: fromRows, columns: fromRes.columns, count: fromRows.length, sql: fromSQL });
 
       if (clauses.where){
@@ -889,6 +920,7 @@
         groupRows.forEach(gr => {
           const match = countRows.find(cr => groupKeyCols.every(gk => String(cr[gk]) === String(gr[gk])));
           gr.__members = match ? match.__members : 1;
+          gr.__lineage='group:'+groupKeyCols.map(k=>`${k}=${gr[k]}`).join('|');
         });
         stages.push({ key:'group', rows: groupRows, columns: groupRes.columns, count: groupRows.length, groupKey: clauses.groupBy, sql: realPreHaving });
       }
@@ -901,9 +933,10 @@
         const havingRes = exec(havingSQL);
         const havingRows = rowsToObjects(havingRes.columns, havingRes.rows);
         const priorGroupRows = stages.find(s => s.key === 'group')?.rows || [];
-        const havingKeySet = new Set(havingRows.map(r => JSON.stringify(r)));
-        const discarded = priorGroupRows.filter(r => !havingKeySet.has(JSON.stringify(r)));
-        const evaluated = priorGroupRows.map(r => ({ row: r, pass: havingKeySet.has(JSON.stringify(r)) }));
+        carryLineage(havingRows,priorGroupRows);
+        const havingKeySet = new Set(havingRows.map(rowSignature));
+        const discarded = priorGroupRows.filter(r => !havingKeySet.has(rowSignature(r)));
+        const evaluated = priorGroupRows.map(r => ({ row: r, pass: havingKeySet.has(rowSignature(r)) }));
         stages.push({ key:'having', rows: havingRows, discarded, evaluated, columns: havingRes.columns, count: havingRows.length, condition: clauses.having, sql: havingSQL });
       }
 
@@ -913,12 +946,15 @@
       if (clauses.having) selectBase += ` HAVING ${clauses.having}`;
       const selectRes = exec(selectBase);
       const selectRows = rowsToObjects(selectRes.columns, selectRes.rows);
+      const selectSource=stages.find(s=>s.key==='having')?.rows||stages.find(s=>s.key==='group')?.rows||stages.find(s=>s.key==='where')?.rows||fromRows;
+      carryLineage(selectRows,selectSource);
       stages.push({ key:'select', rows: selectRows, columns: selectRes.columns, count: selectRows.length, sql: selectBase });
 
       if (clauses.distinct){
         const distinctSQL = selectBase.replace(/^SELECT/i, 'SELECT DISTINCT');
         const distinctRes = exec(distinctSQL);
         const distinctRows = rowsToObjects(distinctRes.columns, distinctRes.rows);
+        carryLineage(distinctRows,selectRows);
         stages.push({ key:'distinct', rows: distinctRows, columns: distinctRes.columns, count: distinctRows.length, dedupedFrom: selectRows.length, sql: distinctSQL });
       }
 
@@ -927,6 +963,7 @@
         const orderSQL = `${orderBase} ORDER BY ${clauses.orderBy}`;
         const orderRes = exec(orderSQL);
         const orderRows = rowsToObjects(orderRes.columns, orderRes.rows);
+        carryLineage(orderRows,stages.find(s=>s.key==='distinct')?.rows||selectRows);
         stages.push({ key:'orderby', rows: orderRows, columns: orderRes.columns, count: orderRows.length, orderExpr: clauses.orderBy, sql: orderSQL });
       }
 
@@ -937,6 +974,7 @@
         const limitRes = exec(finalSQL);
         const limitRows = rowsToObjects(limitRes.columns, limitRes.rows);
         const priorRows = (clauses.orderBy ? stages.find(s=>s.key==='orderby').rows : (clauses.distinct ? stages.find(s=>s.key==='distinct').rows : selectRows));
+        carryLineage(limitRows,priorRows);
         stages.push({ key:'limit', rows: limitRows, columns: limitRes.columns, count: limitRows.length, cutFrom: priorRows.length, limitExpr: clauses.limit, sql: finalSQL });
       }
 
@@ -953,7 +991,8 @@
 
   function tableSnapshot(table){
     const r=exec(`SELECT rowid AS __rid, * FROM ${table}`);
-    return {rows:rowsToObjects(r.columns,r.rows),columns:r.columns};
+    const rows=rowsToObjects(r.columns,r.rows);rows.forEach(x=>x.__lineage=`r:${x.__rid}`);
+    return {rows,columns:r.columns};
   }
   function schemaSnapshot(table){
     const r=exec(`PRAGMA table_info(${table})`);
@@ -1179,8 +1218,26 @@
     });
   }
 
+  function lineageColor(key){
+    const colors=['#0d9488','#8b5cf6','#d18a14','#d1436b','#2563a8'];
+    let hash=0;for(const c of String(key))hash=((hash<<5)-hash+c.charCodeAt(0))|0;
+    return colors[Math.abs(hash)%colors.length];
+  }
+  function highlightLineage(lineage){
+    const pipeline=el('pipelineInner'),label=el('lineageLabel');
+    pipeline.classList.add('lineage-active');
+    pipeline.querySelectorAll('.heat-row[data-lineage]').forEach(r=>r.classList.toggle('lineage-match',r.dataset.lineage===lineage));
+    const matches=pipeline.querySelectorAll('.lineage-match').length;
+    label.textContent=`lineage ${lineage} · visible in ${matches} stage${matches===1?'':'s'}`;label.classList.add('show');
+  }
+  function clearLineage(){
+    el('pipelineInner').classList.remove('lineage-active');
+    el('pipelineInner').querySelectorAll('.lineage-match').forEach(r=>r.classList.remove('lineage-match'));
+    el('lineageLabel').classList.remove('show');
+  }
+
   function renderHeatRows(container, stageData, def, accent, isDiscard){
-    const cols = (stageData.columns || (stageData.rows[0] ? Object.keys(stageData.rows[0]) : [])).filter(c => c !== '__rid' && c !== '__members');
+    const cols = (stageData.columns || (stageData.rows[0] ? Object.keys(stageData.rows[0]) : [])).filter(c => c !== '__rid' && c !== '__members' && c !== '__lineage');
     const showCols = cols.slice(0, 4);
     const stats = computeColumnStats(stageData.rows, showCols);
     const maxShow = isDiscard ? 6 : 11;
@@ -1194,9 +1251,21 @@
       return;
     }
 
-    rowsToShow.forEach(r => {
+    rowsToShow.forEach((r,rowIndex) => {
       const rowEl = document.createElement('div');
       rowEl.className = 'heat-row' + (isDiscard || def.key === 'delete' ? ' fail' : '');
+      rowEl.style.animationDelay=`${Math.min(rowIndex*35,280)}ms`;
+      const lineage=r.__lineage||(r.__rid!==undefined?`r:${r.__rid}`:null);
+      if(lineage){
+        rowEl.dataset.lineage=lineage;
+        rowEl.style.borderLeft=`2px solid ${lineageColor(lineage)}`;
+        rowEl.addEventListener('mouseenter',()=>highlightLineage(lineage));
+        rowEl.addEventListener('mouseleave',clearLineage);
+        rowEl.addEventListener('focus',()=>highlightLineage(lineage));
+        rowEl.addEventListener('blur',clearLineage);
+        rowEl.tabIndex=0;
+        rowEl.setAttribute('aria-label',`Trace ${lineage} across query stages`);
+      }
       showCols.forEach(c => {
         const cellInfo = cellStyleFor(c, r[c], stats, accent);
         const cell = document.createElement('div');
@@ -1385,7 +1454,7 @@
     el('detailTitle').textContent = def.label;
     el('detailSql').textContent = stageData.sql || '(derived from prior stage)';
     const table = el('detailTable');
-    const cols = (stageData.columns || (stageData.rows[0] ? Object.keys(stageData.rows[0]) : [])).filter(c => c !== '__rid' && c !== '__members');
+    const cols = (stageData.columns || (stageData.rows[0] ? Object.keys(stageData.rows[0]) : [])).filter(c => c !== '__rid' && c !== '__members' && c !== '__lineage');
 
     if (stageData.evaluated){
       // ANIMATED DERIVATION: reveal each row's evaluation one at a time,
@@ -1430,7 +1499,10 @@
   /* ============================================================
      PLAYBACK CONTROLS
   ============================================================ */
-  let playInterval = null, stepIndex = -1;
+  let playInterval = null, stepIndex = -1, lastPlaybackFrame = 0;
+  const playbackSpeeds=[.25,.5,1,2,4];
+  const currentSpeed=()=>playbackSpeeds[Number(el('speedSlider').value)]||1;
+  el('speedSlider').addEventListener('input',()=>{el('speedValue').textContent=`${currentSpeed()}×`;});
   function applyStepHighlight(idx){
     const stageNodes = [...document.querySelectorAll('.stage-band')];
     stageNodes.forEach((node, i) => {
@@ -1456,17 +1528,48 @@
   });
   el('playBtn').addEventListener('click', () => {
     const btn = el('playBtn');
-    if (playInterval){ clearInterval(playInterval); playInterval = null; btn.textContent = '▶'; btn.classList.remove('playing'); return; }
+    if (playInterval){ cancelAnimationFrame(playInterval); playInterval = null; btn.textContent = '▶'; btn.classList.remove('playing'); return; }
     btn.textContent = '⏸'; btn.classList.add('playing');
     const total = document.querySelectorAll('.stage-band').length;
     if (!total) return;
     if (stepIndex >= total - 1) stepIndex = -1;
-    const speed = 6 - Number(el('speedSlider').value);
-    playInterval = setInterval(() => {
-      stepIndex++;
-      if (stepIndex >= total){ clearInterval(playInterval); playInterval = null; btn.textContent = '▶'; btn.classList.remove('playing'); applyStepHighlight(-1); return; }
-      applyStepHighlight(stepIndex);
-    }, speed * 650);
+    lastPlaybackFrame=0;
+    const tick=(time)=>{
+      if(!lastPlaybackFrame)lastPlaybackFrame=time;
+      if(time-lastPlaybackFrame>=900/currentSpeed()){
+        lastPlaybackFrame=time;stepIndex++;
+        if(stepIndex>=total){playInterval=null;btn.textContent='▶';btn.classList.remove('playing');applyStepHighlight(-1);return;}
+        applyStepHighlight(stepIndex);
+      }
+      playInterval=requestAnimationFrame(tick);
+    };
+    playInterval=requestAnimationFrame(tick);
+  });
+  const tourSteps=[
+    {selector:'.editor-wrap',title:'Write or choose a query',text:'The pipeline rebuilds from real SQLite results as you type.'},
+    {selector:'#tokenStrip',title:'Read the query as tokens',text:'Tables, columns, operators, and values retain the same visual language used below.'},
+    {selector:'#pipelineOuter',title:'Follow logical execution order',text:'SQL begins at FROM, not SELECT. Ribbon width shows how the working row set changes.'},
+    {selector:'.stage-band',title:'Inspect any stage',text:'Click a stage for its exact SQL, full result grid, and animated condition verdicts.'},
+    {selector:'.playback-row',title:'Control the walkthrough',text:'Use play, step controls, the speed slider, or the left and right arrow keys.'}
+  ];
+  let tourIndex=-1;
+  function showTourStep(index){
+    document.querySelectorAll('.tour-focus').forEach(n=>n.classList.remove('tour-focus'));
+    if(index<0||index>=tourSteps.length){el('tourPopover').classList.remove('show');tourIndex=-1;return;}
+    tourIndex=index;const step=tourSteps[index],target=document.querySelector(step.selector);
+    if(target){target.classList.add('tour-focus');target.scrollIntoView({behavior:'smooth',block:'center',inline:'center'});}
+    el('tourTitle').textContent=step.title;el('tourText').textContent=step.text;el('tourProgress').textContent=`${index+1} / ${tourSteps.length}`;el('tourNext').textContent=index===tourSteps.length-1?'finish':'next →';el('tourPopover').classList.add('show');
+  }
+  el('tourBtn').addEventListener('click',()=>showTourStep(0));
+  el('tourNext').addEventListener('click',()=>showTourStep(tourIndex+1));
+  el('tourClose').addEventListener('click',()=>showTourStep(-1));
+  document.addEventListener('keydown',(e)=>{
+    if(e.target.matches('textarea,input,select,button'))return;
+    if(e.key==='ArrowRight'){e.preventDefault();el('stepFwdBtn').click();}
+    else if(e.key==='ArrowLeft'){e.preventDefault();el('stepBackBtn').click();}
+    else if(e.key===' '){e.preventDefault();el('playBtn').click();}
+    else if(e.key==='Enter'&&stepIndex>=0){document.querySelectorAll('.stage-band')[stepIndex]?.click();}
+    else if(e.key==='Escape'){el('detailOverlay').style.display='none';clearLineage();}
   });
 
 })();

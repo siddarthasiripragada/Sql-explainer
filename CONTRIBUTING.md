@@ -37,4 +37,3 @@ Fix GROUP BY card alignment
 Add partition-pruning keyboard controls
 Document unsupported query shapes
 ```
-

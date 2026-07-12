@@ -1,1 +1,26 @@
-{"name":"sql-query-explainer","private":true,"version":"1.0.0","type":"module","scripts":{"dev":"vite --host 0.0.0.0","build":"vite build","preview":"vite preview --host 0.0.0.0"},"dependencies":{"@vitejs/plugin-svelte":"latest","d3":"latest","sql.js":"latest","svelte":"latest","vite":"latest"},"devDependencies":{}}
+{
+  "name": "sql-query-explainer",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Interactive SQL execution and database-performance visualizer powered by SQLite in WebAssembly.",
+  "homepage": "https://siddarthasiripragada.github.io/Sql-explainer/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/siddarthasiripragada/Sql-explainer.git"
+  },
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "check": "node --check performance-lab/performance-lab.js"
+  },
+  "dependencies": {
+    "@vitejs/plugin-svelte": "latest",
+    "d3": "latest",
+    "sql.js": "latest",
+    "svelte": "latest",
+    "vite": "latest"
+  },
+  "devDependencies": {}
+}

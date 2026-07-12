@@ -1,0 +1,24 @@
+name: Feature request
+description: Suggest a SQL concept, visualization, or usability improvement.
+title: "[Feature]: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What should be easier to understand?
+      description: Describe the learner problem before proposing the visual.
+    validations:
+      required: true
+  - type: textarea
+    id: example
+    attributes:
+      label: Example SQL or data
+      description: Include a small example when possible.
+      render: sql
+  - type: textarea
+    id: visual
+    attributes:
+      label: Suggested visual behavior
+      description: What should the learner see or interact with?
+

@@ -1,0 +1,28 @@
+name: Validate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  static-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Verify required files
+        run: test -f index.html && test -f performance-lab/performance-lab.js && test -f performance-lab/performance-lab.css
+
+      - name: Check JavaScript syntax
+        run: node --check performance-lab/performance-lab.js

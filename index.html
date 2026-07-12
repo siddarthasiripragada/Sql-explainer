@@ -56,6 +56,7 @@
   .control-strip{ padding: 4px 28px 16px; }
 
   .examples-row{ display:flex; flex-wrap:wrap; gap:7px; margin-bottom:12px; }
+  .mobile-example-picker{ display:none; }
   .ex-btn{
     font-family: var(--mono); font-size:11px; padding:6px 12px; border-radius:20px;
     background: #fff; border:1px solid var(--line-strong); color: var(--ink-dim);
@@ -392,6 +393,8 @@
     *,*::before,*::after{ animation-duration:.01ms!important; animation-iteration-count:1!important; scroll-behavior:auto!important; transition-duration:.01ms!important; }
     .ribbon-particle{ display:none; }
   }
+  .recording-mode *, .recording-mode *::before, .recording-mode *::after{ animation:none!important; transition:none!important; scroll-behavior:auto!important; }
+  .recording-mode .ribbon-particle{ display:none!important; }
 
   /* ---------- tooltip ---------- */
   .tooltip{
@@ -476,11 +479,24 @@
     .brand h1{ font-size:18px; }
     .brand .sub{ width:100%; font-size:12px; line-height:1.4; }
     .control-strip{ padding:4px 14px 12px; }
-    .examples-row{ gap:6px; margin-bottom:9px; }
+    .examples-row{ gap:8px; margin-bottom:9px; align-items:stretch; }
     .ex-btn{ min-height:36px; padding:6px 9px; font-size:10px; }
-    .pipeline-inner{ flex-direction:column; }
-    .ribbon-wrap{ width:100%; height:34px; }
-    .stage-band,.stage-band[data-stage-key="group"]{ min-width:0; max-width:none; width:100%; }
+    #examplesRow>.ex-btn:not(#performanceToggle),#examplesRow>.more-sql-wrap{ display:none; }
+    .mobile-example-picker{ display:flex; flex:1 1 210px; min-width:0; }
+    .mobile-example-picker select{ width:100%; min-width:0; min-height:42px; padding:0 12px; border:1.5px solid var(--line-strong); border-radius:12px; background:#fff; color:var(--ink-dim); font:10.5px var(--mono); }
+    #performanceToggle{ flex:1 1 120px; min-height:42px; border-color:var(--c-group); background:var(--c-group-bg); color:var(--c-group); }
+    .diagram-section>.playback-row:not(#sliderRow){ position:sticky; top:0; z-index:34; margin:0 8px 10px; padding:8px; gap:7px; border-radius:12px; background:rgba(255,255,255,.96); backdrop-filter:blur(8px); box-shadow:0 7px 16px rgba(35,31,24,.07); }
+    .playback-row{ margin:0 8px 10px; padding:8px; gap:7px; }
+    .pb-btn{ width:40px; height:40px; }
+    .speed-wrap{ flex:1; justify-content:flex-end; font-size:9.5px; }
+    .speed-wrap input[type=range]{ width:68px; }
+    .stage-crumbs{ flex:1 0 100%; order:3; padding-top:2px; scrollbar-width:none; }
+    .stage-crumbs::-webkit-scrollbar{ display:none; }
+    #pipelineOuter{ padding:6px 14px 12px; overflow-x:auto; scroll-snap-type:x mandatory; scroll-padding:14px; overscroll-behavior-x:contain; scrollbar-width:none; }
+    #pipelineOuter::-webkit-scrollbar{ display:none; }
+    .pipeline-inner{ flex-direction:row; min-width:max-content; }
+    .ribbon-wrap{ width:36px; height:auto; min-height:300px; }
+    .stage-band,.stage-band[data-stage-key="group"]{ width:calc(100vw - 60px); min-width:calc(100vw - 60px); max-width:330px; scroll-snap-align:center; scroll-snap-stop:always; }
     .editor-row{ flex-direction:column; }
     #queryInput{ min-height:92px; max-height:140px; padding:13px 14px; font-size:13px; }
     .side-controls{ display:grid; grid-template-columns:minmax(0,1fr) 92px; gap:8px; width:100%; }
@@ -650,6 +666,7 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.js"></script>
 <script>
+  if(new URLSearchParams(location.search).has('recording'))document.documentElement.classList.add('recording-mode');
 (function(){
 
   /* ============================================================
@@ -812,6 +829,20 @@
   function buildExamples(){
     const row = el('examplesRow');
     row.innerHTML = '';
+    const mobilePicker=document.createElement('label');
+    mobilePicker.className='mobile-example-picker';
+    const mobileSelect=document.createElement('select');
+    mobileSelect.setAttribute('aria-label','Choose a SQL example');
+    const promptOption=document.createElement('option');
+    promptOption.value='';promptOption.textContent='Examples ▾';promptOption.selected=true;
+    mobileSelect.appendChild(promptOption);
+    const readGroup=document.createElement('optgroup');readGroup.label='Query examples';
+    DATASETS[currentDataset].examples.forEach(ex=>{const option=document.createElement('option');option.value=ex.sql;option.textContent=ex.label;readGroup.appendChild(option);});
+    const writeGroup=document.createElement('optgroup');writeGroup.label='More SQL';
+    WRITE_EXAMPLES[currentDataset].forEach(ex=>{const option=document.createElement('option');option.value=ex.sql;option.textContent=ex.label;writeGroup.appendChild(option);});
+    mobileSelect.append(readGroup,writeGroup);
+    mobileSelect.addEventListener('change',()=>{if(!mobileSelect.value)return;el('queryInput').value=mobileSelect.value;updateUrlHash(mobileSelect.value);runPipeline();});
+    mobilePicker.appendChild(mobileSelect);row.appendChild(mobilePicker);
     DATASETS[currentDataset].examples.forEach(ex => {
       const b = document.createElement('button');
       b.className = 'ex-btn';

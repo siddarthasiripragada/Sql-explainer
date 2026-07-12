@@ -212,6 +212,63 @@ def slide_mobile_lab():
     return img
 
 
+def slide_live_scene(name, kicker, title_value, subtitle, color, bg, focus="center"):
+    """Turn a real browser capture into the dominant visual, with minimal copy."""
+    img = canvas(); d = ImageDraw.Draw(img)
+    pill(d, 92, 62, kicker.upper(), bg, color)
+    text(d, (92, 132), title_value, 62, INK, True)
+    text(d, (96, 214), subtitle, 29, INK_DIM)
+    frame = browser_frame(load(name), (72, 282, 1848, 1020), crop=False)
+    img.paste(frame, (72, 282), frame)
+    accent_x = 94 if focus == "left" else 1470 if focus == "right" else 742
+    d.rounded_rectangle((accent_x, 995, accent_x + 330, 1003), radius=4, fill=color)
+    return img
+
+
+def slide_mobile_story():
+    img = canvas(); d = ImageDraw.Draw(img)
+    pill(d, 96, 72, "MOBILE READY", TEAL_BG, TEAL)
+    text(d, (96, 158), "The same story in your pocket.", 62, INK, True)
+    text(d, (100, 242), "Swipe the pipeline. Tap the catalog. Learn anywhere.", 30, INK_DIM)
+    phone = phone_frame(load("34-live-mobile-card.png"), 750)
+    img.paste(phone, (1180, 265), phone)
+    steps = [
+        ("1", "TYPE SQL", VIOLET, VIOLET_BG),
+        ("2", "WATCH ROWS MOVE", AMBER, AMBER_BG),
+        ("3", "SEE THE SHORTCUT", TEAL, TEAL_BG),
+    ]
+    y = 400
+    for number, label, color, bg in steps:
+        d.ellipse((110, y, 186, y + 76), fill=bg, outline=color, width=3)
+        text(d, (148, y + 38), number, 28, color, True, True, "mm")
+        rounded(d, (220, y - 2, 1050, y + 80), 25, "#ffffff", LINE, 2)
+        text(d, (265, y + 38), label, 28, INK, True, True, "lm")
+        if y < 720:
+            text(d, (148, y + 112), "↓", 38, INK_DIM, True, anchor="mm")
+        y += 176
+    return img
+
+
+def slide_real_engine():
+    img = canvas(); d = ImageDraw.Draw(img)
+    pill(d, 96, 84, "NOT SCRIPTED", TEAL_BG, TEAL)
+    text(d, (96, 190), "Real SQLite. Real row sets.", 76, INK, True)
+    text(d, (100, 292), "Every number comes from the query running in your browser.", 32, INK_DIM)
+    items = [
+        ("18 → 10 → 5", "ROWS CHANGE", AMBER, AMBER_BG),
+        ("SCAN → SEARCH", "REAL QUERY PLAN", VIOLET, VIOLET_BG),
+        ("0", "BACKEND SERVERS", TEAL, TEAL_BG),
+    ]
+    for i, (value, label, color, bg) in enumerate(items):
+        x = 96 + i * 590
+        rounded(d, (x, 430, x + 520, 800), 34, "#ffffff", LINE, 2)
+        d.rounded_rectangle((x + 40, 474, x + 480, 610), radius=26, fill=bg, outline=color, width=2)
+        text(d, (x + 260, 542), value, 48, color, True, True, "mm")
+        text(d, (x + 260, 694), label, 27, INK, True, True, "mm")
+    text(d, (960, 922), "sql.js  •  D3.js  •  fully client-side", 30, INK_DIM, True, True, "mm")
+    return img
+
+
 def slide_proof():
     img = canvas(); d = ImageDraw.Draw(img)
     header(d, "BUILT FOR LEARNING", "Not a scripted animation.", "Each stage is reconstructed from real SQLite results inside the browser.")
@@ -234,12 +291,12 @@ def slide_proof():
 
 def slide_outro():
     img = canvas(); d = ImageDraw.Draw(img)
-    text(d, (960, 245), "See SQL execute.", 92, INK, True, anchor="mm")
-    text(d, (960, 365), "Not just return results.", 92, VIOLET, True, anchor="mm")
-    text(d, (960, 505), "Try the interactive demo", 38, INK_DIM, anchor="mm")
+    text(d, (960, 230), "See SQL execute.", 96, INK, True, anchor="mm")
+    text(d, (960, 360), "Not just return results.", 96, VIOLET, True, anchor="mm")
+    text(d, (960, 510), "Try the interactive demo", 38, INK_DIM, anchor="mm")
     rounded(d, (330, 595, 1590, 715), 36, TEAL_BG, TEAL, 3)
     text(d, (960, 655), "siddarthasiripragada.github.io/Sql-explainer/", 37, TEAL, True, True, "mm")
-    for x, label, color, bg in [(520, "TYPE", VIOLET, VIOLET_BG), (820, "PLAY", AMBER, AMBER_BG), (1120, "LEARN", TEAL, TEAL_BG)]:
+    for x, label, color, bg in [(520, "TYPE", VIOLET, VIOLET_BG), (820, "WATCH", AMBER, AMBER_BG), (1120, "LEARN", TEAL, TEAL_BG)]:
         pill(d, x, 820, label, bg, color, 250)
     return img
 
@@ -247,28 +304,29 @@ def slide_outro():
 def make_slides():
     return [
         save_slide(1, slide_title()),
-        save_slide(2, slide_mobile_pair()),
-        save_slide(3, slide_desktop("10-desktop-btree.png", "PERFORMANCE VISUALIZED", "B-tree: follow the shortcut", "Move from the root to the first matching leaf — then read only what matters.", "The database follows sorted branches instead of opening every table row.", VIOLET, VIOLET_BG)),
-        save_slide(4, slide_desktop("11-desktop-bitmap.png", "FILTERS AS BITS", "Bitmap: combine yes/no maps", "AND and OR become visible operations over real example rows.", "Low-cardinality filters become compact bitmaps that can be combined quickly.", AMBER, AMBER_BG)),
-        save_slide(5, slide_desktop("12-desktop-composite.png", "ORDER MATTERS", "Composite: choose the entrance", "Swap column order and watch the leftmost-prefix rule change the route.", "The first indexed column decides which queries can jump directly to matching keys.", TEAL, TEAL_BG)),
-        save_slide(6, slide_mobile_lab()),
-        save_slide(7, slide_proof()),
+        save_slide(2, slide_live_scene("30-live-pipeline.png", "REAL QUERY JOURNEY", "One query. Five visible transformations.", "FROM → WHERE → SELECT → ORDER BY → LIMIT", VIOLET, VIOLET_BG)),
+        save_slide(3, slide_live_scene("31-live-card-catalog-start.png", "WITHOUT AN INDEX", "Check every book.", "The answer is there—but the database must inspect every row.", AMBER, AMBER_BG, "left")),
+        save_slide(4, slide_live_scene("32-live-card-catalog-flip.png", "WITH A B-TREE", "Open one drawer. Flip one card.", "The real SQLite plan changes from SCAN to SEARCH.", TEAL, TEAL_BG, "right")),
+        save_slide(5, slide_live_scene("33-live-archive-wing.png", "PARTITION PRUNING", "Skip whole rooms.", "Three rooms stay locked. One matching room opens.", ROSE, ROSE_BG, "center")),
+        save_slide(6, slide_mobile_story()),
+        save_slide(7, slide_real_engine()),
         save_slide(8, slide_outro()),
     ]
 
 
-def synth_music(seconds: float, path: Path):
+def synth_music(seconds: float, path: Path, cue_times=()):
     sr = 44100
     n = int(seconds * sr)
     t = np.arange(n, dtype=np.float64) / sr
     left = np.zeros(n, dtype=np.float64)
     right = np.zeros(n, dtype=np.float64)
     rng = np.random.default_rng(42)
+    # Warm C-major / A-minor loop: optimistic, calm, and entirely original.
     progression = [
-        [130.81, 164.81, 196.00, 246.94],
-        [110.00, 130.81, 164.81, 196.00],
-        [87.31, 130.81, 174.61, 220.00],
-        [98.00, 146.83, 196.00, 246.94],
+        [130.81, 164.81, 196.00, 246.94],  # Cmaj7
+        [110.00, 130.81, 164.81, 196.00],  # Am7
+        [87.31, 130.81, 174.61, 220.00],   # Fmaj7
+        [98.00, 146.83, 196.00, 246.94],   # G6
     ]
     chord_len = 4.0
     for start in np.arange(0, seconds, chord_len):
@@ -277,11 +335,14 @@ def synth_music(seconds: float, path: Path):
         local = np.arange(b - a) / sr
         env = np.minimum(1, local / 0.7) * np.minimum(1, (chord_len - local) / 0.8)
         for j, freq in enumerate(chord):
-            signal = (np.sin(2 * np.pi * freq * local) + 0.22 * np.sin(2 * np.pi * freq * 2 * local)) * env
+            signal = (np.sin(2 * np.pi * freq * local) + 0.18 * np.sin(2 * np.pi * freq * 2 * local) + 0.07 * np.sin(2 * np.pi * freq * 3 * local)) * env
             pan = -0.35 + j * 0.23
-            left[a:b] += signal * (1 - pan) * 0.022
-            right[a:b] += signal * (1 + pan) * 0.022
-    beat = 60 / 112
+            left[a:b] += signal * (1 - pan) * 0.025
+            right[a:b] += signal * (1 + pan) * 0.025
+        bass = np.sin(2 * np.pi * (chord[0] / 2) * local) * np.exp(-local * 0.42)
+        left[a:b] += bass * 0.055
+        right[a:b] += bass * 0.055
+    beat = 60 / 108
     for k, start in enumerate(np.arange(0, seconds, beat / 2)):
         a = int(start * sr)
         length = min(n - a, int(0.24 * sr))
@@ -289,22 +350,22 @@ def synth_music(seconds: float, path: Path):
             continue
         local = np.arange(length) / sr
         chord = progression[int(start / chord_len) % len(progression)]
-        note = chord[(k * 2) % len(chord)] * 2
-        pluck = np.sin(2 * np.pi * note * local) * np.exp(-local * 12)
+        note = chord[(k * 3) % len(chord)] * 2
+        pluck = (np.sin(2 * np.pi * note * local) + .2 * np.sin(2 * np.pi * note * 2 * local)) * np.exp(-local * 11)
         pan = -0.28 if k % 2 == 0 else 0.28
-        left[a:a+length] += pluck * (1 - pan) * 0.09
-        right[a:a+length] += pluck * (1 + pan) * 0.09
+        left[a:a+length] += pluck * (1 - pan) * 0.075
+        right[a:a+length] += pluck * (1 + pan) * 0.075
     for beat_index, start in enumerate(np.arange(0, seconds, beat)):
         a = int(start * sr)
         length = min(n - a, int(0.32 * sr))
         local = np.arange(length) / sr
         kick = np.sin(2 * np.pi * (68 - 34 * local) * local) * np.exp(-local * 18)
-        left[a:a+length] += kick * 0.18
-        right[a:a+length] += kick * 0.18
+        left[a:a+length] += kick * 0.15
+        right[a:a+length] += kick * 0.15
         if beat_index % 2 == 1:
             noise = rng.normal(0, 1, length)
             noise = np.concatenate(([0], np.diff(noise)))
-            clap = noise * np.exp(-local * 24) * 0.045
+            clap = noise * np.exp(-local * 24) * 0.028
             left[a:a+length] += clap
             right[a:a+length] += clap
     for start in np.arange(beat / 2, seconds, beat / 2):
@@ -314,11 +375,27 @@ def synth_music(seconds: float, path: Path):
         hat = np.concatenate(([0], np.diff(rng.normal(0, 1, length)))) * np.exp(-local * 55) * 0.012
         left[a:a+length] += hat
         right[a:a+length] += hat
+    # Soft page-turn sweeps and glassy chimes mark visual transitions.
+    for cue_index, start in enumerate(cue_times):
+        a = int(max(0, start - .18) * sr)
+        length = min(n - a, int(.62 * sr))
+        if length <= 0:
+            continue
+        local = np.arange(length) / sr
+        sweep_noise = rng.normal(0, 1, length)
+        sweep_env = np.sin(np.pi * np.minimum(local / .62, 1)) ** 2
+        sweep = np.concatenate(([0], np.diff(sweep_noise))) * sweep_env * .012
+        chime_freq = 659.25 if cue_index % 2 == 0 else 783.99
+        chime = np.sin(2 * np.pi * chime_freq * local) * np.exp(-local * 8) * .035
+        left[a:a+length] += sweep * .85 + chime
+        right[a:a+length] += sweep * 1.15 + chime
     fade = int(1.5 * sr)
     left[:fade] *= np.linspace(0, 1, fade); right[:fade] *= np.linspace(0, 1, fade)
     left[-fade:] *= np.linspace(1, 0, fade); right[-fade:] *= np.linspace(1, 0, fade)
     stereo = np.stack([left, right], axis=1)
-    stereo /= max(1.0, np.max(np.abs(stereo)) / 0.82)
+    peak = np.max(np.abs(stereo))
+    if peak > 0:
+        stereo *= 0.82 / peak
     pcm = (stereo * 32767).astype(np.int16)
     with wave.open(str(path), "wb") as wav:
         wav.setnchannels(2); wav.setsampwidth(2); wav.setframerate(sr); wav.writeframes(pcm.tobytes())
@@ -326,24 +403,34 @@ def synth_music(seconds: float, path: Path):
 
 def render(slides, ffmpeg: str):
     OUTPUT.mkdir(parents=True, exist_ok=True)
-    durations = [4.2, 5.2, 5.5, 5.5, 5.5, 6.0, 5.0, 5.0]
-    transition = 0.65
+    durations = [3.8, 5.2, 4.8, 5.4, 5.0, 5.2, 4.8, 4.8]
+    transition = 0.72
     total = sum(durations) - transition * (len(durations) - 1)
     audio = OUTPUT / "sql-explainer-original-track.wav"
-    synth_music(total + 0.2, audio)
+    cue_times=[]; cue_clock=durations[0]-transition
+    for duration in durations[1:]:
+        cue_times.append(cue_clock); cue_clock += duration-transition
+    synth_music(total + 0.2, audio, cue_times)
     command = [ffmpeg, "-y"]
     for slide, duration in zip(slides, durations):
         command += ["-loop", "1", "-framerate", str(FPS), "-t", str(duration), "-i", str(slide)]
     command += ["-i", str(audio)]
     filters = []
     for i in range(len(slides)):
-        filters.append(f"[{i}:v]scale={WIDTH}:{HEIGHT},format=yuv420p,setsar=1[v{i}]")
+        if i % 2 == 0:
+            zoom="min(zoom+0.00032,1.045)"
+            x="iw/2-(iw/zoom/2)+sin(on/75)*5"
+        else:
+            zoom="if(eq(on,0),1.045,max(1.0,zoom-0.00028))"
+            x="iw/2-(iw/zoom/2)-sin(on/80)*5"
+        filters.append(f"[{i}:v]scale={WIDTH}:{HEIGHT},zoompan=z='{zoom}':x='{x}':y='ih/2-(ih/zoom/2)':d=1:s={WIDTH}x{HEIGHT}:fps={FPS},format=yuv420p,setsar=1[v{i}]")
     previous = "v0"
     elapsed = durations[0]
+    transitions=["fade","smoothleft","wipeleft","circleopen","smoothup","slideleft","fadeblack"]
     for i in range(1, len(slides)):
         offset = elapsed - transition
         output = f"x{i}"
-        filters.append(f"[{previous}][v{i}]xfade=transition=fade:duration={transition}:offset={offset:.3f}[{output}]")
+        filters.append(f"[{previous}][v{i}]xfade=transition={transitions[i-1]}:duration={transition}:offset={offset:.3f}[{output}]")
         previous = output
         elapsed += durations[i] - transition
     filters.append(f"[{previous}]fade=t=in:st=0:d=0.5,fade=t=out:st={total-0.8:.3f}:d=0.8[video]")

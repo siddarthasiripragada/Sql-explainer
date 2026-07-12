@@ -149,6 +149,7 @@
   .sort-lane.pile{ flex-wrap:wrap; align-content:center; }
   .sort-chip{ min-width:34px; padding:6px; text-align:center; border-radius:6px; background:var(--c-order-bg); color:var(--c-order); font:700 8px var(--mono); transition:.45s ease; animation:blockWake .5s ease both; animation-delay:calc(var(--i) * 55ms); }
   .sort-lane.ordered .sort-chip{ transform:translateX(0); box-shadow:inset 0 -2px rgba(37,99,168,.2); }
+  .sort-chip.skipped{ opacity:.2; filter:grayscale(1); }
   .sort-funnel{ text-align:center; margin:6px 0; color:var(--c-order); font:10px var(--mono); }
   .comparison-dots{ display:grid; grid-template-columns:repeat(12,1fr); gap:4px; margin-top:14px; padding:10px; border-radius:10px; border:1px solid var(--line); background:#fff; }
   .comparison-dot{ aspect-ratio:1; border-radius:3px; background:var(--c-where-bg); border:1px solid rgba(224,138,44,.18); animation:blockWake .45s ease both; animation-delay:calc(var(--i) * 18ms); }
@@ -156,6 +157,39 @@
   .lookup-line{ display:grid; grid-template-columns:1fr 34px 1fr; align-items:center; gap:5px; font:8px var(--mono); color:var(--ink-faint); }
   .lookup-line i{ height:2px; background:var(--c-select); position:relative; }
   .lookup-line i:after{ content:'›'; position:absolute; right:-2px; top:-7px; color:var(--c-select); font-style:normal; font-size:13px; }
+  .index-type-tabs{ display:flex; gap:7px; flex-wrap:wrap; margin-bottom:12px; }
+  .index-type-tabs button{ border:1px solid var(--line-strong); background:var(--paper-2); color:var(--ink-dim); border-radius:18px; padding:7px 11px; font:10px var(--mono); cursor:pointer; }
+  .index-type-tabs button.active{ background:var(--c-group-bg); border-color:var(--c-group); color:var(--c-group); font-weight:700; }
+  .index-type-scene{ min-height:300px; border:1px solid var(--line); border-radius:14px; padding:15px; background:#fff; }
+  .type-heading{ display:flex; justify-content:space-between; gap:14px; align-items:flex-start; margin-bottom:12px; }
+  .type-heading h4{ margin:0 0 4px; font:800 16px var(--sora); color:var(--ink); }
+  .type-heading p{ margin:0; max-width:680px; font:10.5px/1.55 var(--mono); color:var(--ink-dim); }
+  .support-badge{ flex:none; padding:5px 8px; border-radius:8px; background:var(--c-select-bg); color:var(--c-select); font:700 9px var(--mono); }
+  .support-badge.sim{ background:var(--c-where-bg); color:var(--c-where); }
+  .bit-row{ display:grid; grid-template-columns:100px repeat(18,minmax(17px,1fr)); gap:3px; align-items:center; margin-bottom:6px; }
+  .bit-label{ font:700 9px var(--mono); color:var(--ink-dim); overflow:hidden; text-overflow:ellipsis; }
+  .bit{ height:23px; display:grid; place-items:center; border-radius:4px; background:var(--c-from-bg); color:var(--ink-faint); font:700 8px var(--mono); transition:.35s ease; }
+  .bit.on{ background:var(--c-group); color:#fff; transform:translateY(-1px); box-shadow:0 2px 7px rgba(139,92,246,.2); }
+  .bit.result{ background:var(--c-select); color:#fff; }
+  .bit-op{ margin:8px 0 8px 100px; color:var(--c-where); font:700 10px var(--mono); }
+  .composite-list{ display:grid; grid-template-columns:repeat(3,1fr); gap:7px; margin:12px 0; }
+  .composite-key{ display:flex; overflow:hidden; border:1px solid var(--line); border-radius:8px; font:9px var(--mono); }
+  .composite-key b,.composite-key span{ flex:1; padding:7px; text-align:center; }
+  .composite-key b{ background:var(--c-group-bg); color:var(--c-group); }.composite-key span{ background:var(--c-order-bg); color:var(--c-order); }
+  .prefix-tests{ display:grid; grid-template-columns:1fr 1fr; gap:9px; }
+  .prefix-test{ padding:10px; border-radius:10px; border:1px solid var(--line); font:10px/1.5 var(--mono); color:var(--ink-dim); }
+  .prefix-test.good{ background:var(--c-select-bg); border-color:rgba(13,148,136,.3); }.prefix-test.bad{ background:var(--c-limit-bg); border-color:rgba(209,67,107,.25); }
+  .hash-scene{ display:grid; grid-template-columns:190px 54px 1fr; align-items:center; gap:12px; }
+  .hash-input{ padding:18px 12px; border-radius:12px; background:var(--c-where-bg); color:var(--c-where); text-align:center; font:700 11px var(--mono); }
+  .hash-arrow{ text-align:center; color:var(--c-select); font:700 18px var(--mono); }
+  .bucket-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+  .hash-bucket{ min-height:100px; padding:9px; border-radius:10px; border:1px solid var(--line); background:var(--paper-2); }
+  .hash-bucket.hit{ border-color:var(--c-select); background:var(--c-select-bg); transform:translateY(-2px); }
+  .hash-bucket b{ display:block; margin-bottom:7px; font:700 9px var(--mono); color:var(--ink-dim); }
+  .hash-bucket span{ display:block; margin:3px 0; padding:3px; border-radius:4px; background:#fff; font:8px var(--mono); color:var(--ink-faint); }
+  .partial-scene{ display:grid; grid-template-columns:1fr 54px 1fr; align-items:center; gap:12px; }
+  .partial-pool{ display:grid; grid-template-columns:repeat(6,1fr); gap:5px; padding:10px; border:1px solid var(--line); border-radius:10px; background:var(--paper-2); }
+  .partial-row{ height:28px; display:grid; place-items:center; border-radius:5px; background:var(--c-from-bg); color:var(--c-from); font:8px var(--mono); }.partial-row.in-index{ background:var(--c-limit-bg); color:var(--c-limit); box-shadow:0 0 0 1px rgba(209,67,107,.25); }
 
   .editor-row{ display:flex; gap:10px; }
   .editor-wrap{
@@ -425,6 +459,7 @@
     .story-arrow{ transform:rotate(90deg); min-height:38px; }.story-arrow small{display:none;}
     .partition-grid{ grid-template-columns:repeat(2,1fr); }
     .storage-scene{ grid-template-columns:repeat(2,1fr); }
+    .bit-row{ grid-template-columns:72px repeat(18,17px); overflow-x:auto; }.composite-list{grid-template-columns:1fr 1fr}.prefix-tests{grid-template-columns:1fr}.hash-scene,.partial-scene{grid-template-columns:1fr}.hash-arrow{transform:rotate(90deg)}.bucket-grid{grid-template-columns:repeat(2,1fr)}
   }
 </style>
 </head>
@@ -475,7 +510,7 @@
 </header>
 
 <section class="performance-panel" id="performancePanel" aria-label="SQL performance visualizer" hidden>
-  <div class="performance-head"><div><div class="performance-title">Performance lab</div><div class="performance-sub">See what the database physically reads—and what optimization lets it skip.</div></div><div class="performance-controls"><button class="perf-tab active" data-perf-mode="index">INDEX</button><button class="perf-tab" data-perf-mode="partition">PARTITION</button><button class="perf-tab" data-perf-mode="sort">SORT</button><button class="perf-tab" data-perf-mode="join">JOIN</button><label class="perf-switch"><input type="checkbox" id="perfEnabled" checked> <span id="perfSwitchLabel">optimization on</span></label><button class="perf-close" id="perfClose" aria-label="Close performance lab">✕</button></div></div>
+  <div class="performance-head"><div><div class="performance-title">Performance lab</div><div class="performance-sub">See what the database physically reads—and what optimization lets it skip.</div></div><div class="performance-controls"><button class="perf-tab active" data-perf-mode="index">INDEX</button><button class="perf-tab" data-perf-mode="types">INDEX TYPES</button><button class="perf-tab" data-perf-mode="partition">PARTITION</button><button class="perf-tab" data-perf-mode="sort">SORT</button><button class="perf-tab" data-perf-mode="join">JOIN</button><label class="perf-switch"><input type="checkbox" id="perfEnabled" checked> <span id="perfSwitchLabel">optimization on</span></label><button class="perf-close" id="perfClose" aria-label="Close performance lab">✕</button></div></div>
   <div id="performanceVisual"></div>
 </section>
 
@@ -640,7 +675,7 @@
     { key:'result',   label:'AFTER',       color:'--c-order',   bg:'--c-order-bg' },
   ];
 
-  let SQL = null, db = null, currentDataset = 'bank', debounceTimer = null, lastStages = [], performanceMode='index';
+  let SQL = null, db = null, currentDataset = 'bank', debounceTimer = null, lastStages = [], performanceMode='index', indexTypeMode='btree';
   const el = (id) => document.getElementById(id);
   const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 
@@ -996,6 +1031,7 @@
     const sql=raw.trim().replace(/;+\s*$/,'');
     if(!/^SELECT\b/i.test(sql)){visual.innerHTML='<div class="perf-note">Performance plans are shown for SELECT queries. Choose a SELECT example above.</div>';return;}
     if(performanceMode==='partition'){renderPartitionPerformance(sql,visual);return;}
+    if(performanceMode==='types'){renderIndexTypes(sql,visual);return;}
     if(performanceMode==='sort'){renderSortPerformance(sql,visual);return;}
     if(performanceMode==='join'){renderJoinPerformance(sql,visual);return;}
     const table=sql.match(/\bFROM\s+([A-Za-z_]\w*)/i)?.[1];
@@ -1019,6 +1055,33 @@
       const blocks=(mode)=>Array.from({length:Math.min(total,27)},(_,i)=>{const id=i+1,hit=matchingIds.includes(id);const cls=mode==='all'?'checked':useIndex?(hit?'hit':'skipped'):'checked';return`<div class="row-block ${cls}" style="--i:${i}">${id}</div>`}).join('');
       visual.innerHTML=`<div class="saving-banner"><span><b>${useIndex&&indexUsable?`${saved} table rows not opened`:'Watch the work, not just the answer'}</b><br>${useIndex&&indexUsable?'The result is identical. The database takes a shorter path to find it.':'Turn optimization on to compare the physical work behind this query.'}</span><span>${escapeHtml(where||'Add a WHERE condition')} · ${selectivity}% of rows match</span></div><div class="perf-story"><div class="workbench"><div class="workbench-kicker">without an index</div><h4>Read every row, one by one</h4><div class="workbench-copy">Like finding a name in an unsorted notebook: start at page one and check every line.</div><div class="row-blocks"><i class="scan-beam"></i>${blocks('all')}</div><div class="work-score"><div><strong>${total}</strong><br><span>table rows checked</span></div><div class="perf-plan">${escapeHtml(beforePlan)}</div></div></div><div class="story-arrow">→<small>same SQL, less work</small></div><div class="workbench ${useIndex?'good':''}"><div class="workbench-kicker">${useIndex?(covering?'with a covering index':'with an index'):'optimization off'}</div><h4>${useIndex?(covering?'Answer from the index itself':'Follow the index, then jump'):'Still reading every row'}</h4><div class="workbench-copy">${indexUsable?(covering?'The index contains the filter and requested columns, so SQLite can answer without opening table rows.':'The index is a sorted map. Follow a few branches, then jump directly to matching table rows.'):'Use a simple WHERE condition so an index can point to matching values.'}</div>${useIndex?`<div class="btree"><div class="tree-level"><span class="tree-node path">${escapeHtml(column)}</span></div><div class="tree-arrow">↓</div><div class="tree-level"><span class="tree-node">low</span><span class="tree-node path">${escapeHtml(where||'match')}</span><span class="tree-node">high</span></div><div class="tree-arrow">↓ ${covering?'read result from index':'jump to rows'}</div></div>`:''}<div class="row-blocks">${blocks('index')}</div><div class="work-score"><div><strong>${useIndex?`${indexHops} + ${matched}`:total}</strong><br><span>${useIndex?`index hops + matching ${covering?'entries':'row reads'}`:'table rows checked'}</span></div><div class="perf-plan">${escapeHtml(useIndex?afterPlan:beforePlan)}</div></div></div></div><div class="plain-lesson"><div class="lesson-icon">i</div><div><b>What changed?</b><span>The SQL and result did not change. ${covering?'This covering index carries every column the query needs. ':'The index changed how SQLite found the rows. '}It avoided opening ${saved} table rows. Selectivity is ${selectivity}%—smaller percentages usually make indexes more valuable.${indexUsable?' The plan changed from SCAN to SEARCH.':''}</span></div></div>`;
     }catch(err){visual.innerHTML=`<div class="perf-note">Could not explain this query: ${escapeHtml(cleanSqlError(err.message))}</div>`;}
+  }
+  function renderIndexTypes(sql,visual){
+    const cfg=currentDataset==='bank'?{table:'bank_transactions',category:'status',numeric:'amount',label:'account_holder',match:'flagged',threshold:1000}:{table:'orders',category:'order_status',numeric:'price',label:'item',match:'shipped',threshold:60};
+    let data;try{data=tableSnapshot(cfg.table).rows}catch(err){visual.innerHTML=`<div class="perf-note">${escapeHtml(cleanSqlError(err.message))}</div>`;return;}
+    const tabs=[['btree','B-TREE'],['bitmap','BITMAP'],['composite','COMPOSITE'],['hash','HASH'],['partial','PARTIAL']];
+    visual.innerHTML=`<div class="index-type-tabs">${tabs.map(([k,l])=>`<button data-index-type="${k}" class="${indexTypeMode===k?'active':''}">${l}</button>`).join('')}</div><div class="index-type-scene" id="indexTypeScene"></div>`;
+    visual.querySelectorAll('[data-index-type]').forEach(btn=>btn.addEventListener('click',()=>{indexTypeMode=btn.dataset.indexType;renderIndexTypes(sql,visual);}));
+    const scene=el('indexTypeScene');
+    if(indexTypeMode==='btree'){
+      const values=data.map(r=>r[cfg.numeric]).filter(v=>typeof v==='number').sort((a,b)=>a-b),matches=values.filter(v=>v>cfg.threshold);
+      scene.innerHTML=`<div class="type-heading"><div><h4>B-tree index · follow branches to a range</h4><p>Values stay sorted in a balanced tree. For ${cfg.numeric} &gt; ${cfg.threshold}, the database descends to the first matching leaf, then walks forward.</p></div><span class="support-badge">SQLite native</span></div><div class="btree"><div class="tree-level"><span class="tree-node path">root ${escapeHtml(formatVal(values[Math.floor(values.length/2)]))}</span></div><div class="tree-arrow">↓ choose the greater branch</div><div class="tree-level"><span class="tree-node">low</span><span class="tree-node path">${cfg.numeric} &gt; ${cfg.threshold}</span><span class="tree-node">higher</span></div><div class="tree-arrow">↓ first matching leaf</div></div><div class="sort-lane ordered">${values.map((v,i)=>`<span class="sort-chip ${v>cfg.threshold?'':'skipped'}" style="--i:${i}">${escapeHtml(formatVal(v))}</span>`).join('')}</div><div class="plain-lesson"><div class="lesson-icon">B</div><div><b>Best for equality, ranges, and ordering</b><span>The tree stays shallow as data grows. Finding a starting point takes a few branch choices instead of reading every row. ${matches.length} values are in this range.</span></div></div>`;
+    }else if(indexTypeMode==='bitmap'){
+      const categories=[...new Set(data.map(r=>String(r[cfg.category])))],chosen=categories.includes(cfg.match)?cfg.match:categories[0];
+      const catBits=data.map(r=>String(r[cfg.category])===chosen),rangeBits=data.map(r=>typeof r[cfg.numeric]==='number'&&r[cfg.numeric]>=cfg.threshold),result=catBits.map((b,i)=>b&&rangeBits[i]);
+      const bitRow=(label,bits,cls='on')=>`<div class="bit-row"><div class="bit-label">${escapeHtml(label)}</div>${bits.map(b=>`<i class="bit ${b?cls:''}">${b?1:0}</i>`).join('')}</div>`;
+      scene.innerHTML=`<div class="type-heading"><div><h4>Bitmap index · combine yes/no maps</h4><p>Each category becomes a row of bits. A 1 means that data row belongs to the category. AND and OR combine filters extremely quickly.</p></div><span class="support-badge sim">concept simulation · not SQLite</span></div>${bitRow(`${cfg.category} = ${chosen}`,catBits)}${bitRow(`${cfg.numeric} ≥ ${cfg.threshold}`,rangeBits)}<div class="bit-op">AND ↓ keep rows where both bits are 1</div>${bitRow('result row IDs',result,'result')}<div class="plain-lesson"><div class="lesson-icon">0/1</div><div><b>Best for low-cardinality columns</b><span>Status, region, yes/no, and small category sets work well. A bitmap is compact when many rows share a few repeated values; frequent row updates can make it expensive.</span></div></div>`;
+    }else if(indexTypeMode==='composite'){
+      const keys=data.filter(r=>typeof r[cfg.numeric]==='number').sort((a,b)=>String(a[cfg.category]).localeCompare(String(b[cfg.category]))||a[cfg.numeric]-b[cfg.numeric]).slice(0,15);
+      scene.innerHTML=`<div class="type-heading"><div><h4>Composite index · (${cfg.category}, ${cfg.numeric})</h4><p>One index sorts by the first column, then sorts by the second inside each first-column group.</p></div><span class="support-badge">SQLite native</span></div><div class="composite-list">${keys.map(r=>`<div class="composite-key"><b>${escapeHtml(formatVal(r[cfg.category]))}</b><span>${escapeHtml(formatVal(r[cfg.numeric]))}</span></div>`).join('')}</div><div class="prefix-tests"><div class="prefix-test good"><b>✓ Uses the index</b><br>WHERE ${cfg.category} = '${cfg.match}'<br>WHERE ${cfg.category} = '${cfg.match}' AND ${cfg.numeric} &gt; ${cfg.threshold}</div><div class="prefix-test bad"><b>✕ Cannot efficiently start here</b><br>WHERE ${cfg.numeric} &gt; ${cfg.threshold}<br><br>The leftmost ${cfg.category} column is missing.</div></div><div class="plain-lesson"><div class="lesson-icon">1·2</div><div><b>The leftmost-prefix rule</b><span>Think of a phone book sorted by last name, then first name. You can find “Patel, Sam” or every “Patel,” but searching only for “Sam” still requires scanning many last-name groups.</span></div></div>`;
+    }else if(indexTypeMode==='hash'){
+      const labels=data.map(r=>String(r[cfg.label])),target=labels[Math.min(1,labels.length-1)],bucketCount=4,hash=s=>[...s].reduce((a,c)=>a+c.charCodeAt(0),0)%bucketCount,buckets=Array.from({length:bucketCount},()=>[]);labels.forEach((v,i)=>buckets[hash(v)].push({v,id:i+1}));const hit=hash(target);
+      scene.innerHTML=`<div class="type-heading"><div><h4>Hash index · calculate the bucket address</h4><p>An equality value is converted directly into a bucket number. There is no sorted order to walk.</p></div><span class="support-badge sim">concept simulation · not SQLite</span></div><div class="hash-scene"><div class="hash-input">hash('${escapeHtml(target)}')</div><div class="hash-arrow">→ ${hit} →</div><div class="bucket-grid">${buckets.map((items,i)=>`<div class="hash-bucket ${i===hit?'hit':''}"><b>bucket ${i}</b>${items.map(x=>`<span>row ${x.id} · ${escapeHtml(x.v)}</span>`).join('')}</div>`).join('')}</div></div><div class="plain-lesson"><div class="lesson-icon">#</div><div><b>Fast equality; no range ordering</b><span>Hash indexes are excellent for “equals.” They cannot answer greater-than, less-than, prefix, or ORDER BY efficiently because neighboring values do not land in neighboring buckets.</span></div></div>`;
+    }else{
+      const selected=data.filter(r=>String(r[cfg.category])===cfg.match),query=`SELECT ${cfg.label}, ${cfg.numeric} FROM ${cfg.table} WHERE ${cfg.category}='${cfg.match}'`,before=queryPlan(query);let after=before;
+      db.run('SAVEPOINT perf_partial');try{db.run(`CREATE INDEX __visual_partial ON ${cfg.table}(${cfg.category},${cfg.numeric},${cfg.label}) WHERE ${cfg.category}='${cfg.match}'`);after=queryPlan(query);}finally{db.run('ROLLBACK TO perf_partial');db.run('RELEASE perf_partial');}
+      scene.innerHTML=`<div class="type-heading"><div><h4>Partial index · index only the rows you care about</h4><p>This index contains rows where ${cfg.category} = '${cfg.match}'. Everything else stays out, making the index smaller.</p></div><span class="support-badge">SQLite native · real plan</span></div><div class="partial-scene"><div><div class="perf-card-label">full table · ${data.length} rows</div><div class="partial-pool">${data.map((r,i)=>`<i class="partial-row ${String(r[cfg.category])===cfg.match?'in-index':''}">${i+1}</i>`).join('')}</div></div><div class="story-arrow">→</div><div><div class="perf-card-label">partial index · ${selected.length} rows</div><div class="partial-pool">${selected.map((r,i)=>`<i class="partial-row in-index">${data.indexOf(r)+1}</i>`).join('')}</div></div></div><div class="perf-summary" style="margin-top:12px"><div class="perf-plan">${escapeHtml(before)}</div><div class="perf-arrow">→</div><div class="perf-plan">${escapeHtml(after)}</div></div><div class="plain-lesson"><div class="lesson-icon">%</div><div><b>Smaller index, cheaper writes</b><span>Useful when queries repeatedly target a small active subset—such as flagged, unpaid, or recent rows. Queries outside the WHERE condition cannot use this index.</span></div></div>`;
+    }
   }
   function renderPartitionPerformance(sql,visual){
     const config=currentDataset==='bank'?{table:'bank_transactions',column:'branch_id',keys:[1,2,3,4]}:{table:'orders',column:'customer_id',keys:[1,2,3,4]};

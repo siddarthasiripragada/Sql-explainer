@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./performance-lab/performance-lab.css">
 <style>
   :root{
     --paper: #f7f4ee;
@@ -665,6 +666,7 @@
 </article>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.js"></script>
+<script src="./performance-lab/performance-lab.js"></script>
 <script>
   if(new URLSearchParams(location.search).has('recording'))document.documentElement.classList.add('recording-mode');
 (function(){
@@ -1145,10 +1147,16 @@
     const p=exec(`EXPLAIN QUERY PLAN ${sql}`);
     return rowsToObjects(p.columns,p.rows).map(r=>r.detail||Object.values(r).at(-1)).join(' · ');
   }
+  function performanceLabBridge(){
+    return{db,exec,queryPlan,schemaSnapshot,tableSnapshot,getDataset:()=>currentDataset};
+  }
   function renderPerformance(raw){
     const visual=el('performanceVisual');if(!visual||!db)return;
     const sql=raw.trim().replace(/;+\s*$/,'');
-    if(!/^SELECT\b/i.test(sql)){visual.innerHTML='<div class="perf-note">Performance plans are shown for SELECT queries. Choose a SELECT example above.</div>';return;}
+    if(!/^SELECT\b/i.test(sql)){window.PerformanceLibraryLab?.destroy(visual);visual.innerHTML='<div class="perf-note">Performance plans are shown for SELECT queries. Choose a SELECT example above.</div>';return;}
+    if(performanceMode==='index'&&window.PerformanceLibraryLab){window.PerformanceLibraryLab.renderIndex({visual,sql,bridge:performanceLabBridge()});return;}
+    if(performanceMode==='partition'&&window.PerformanceLibraryLab){window.PerformanceLibraryLab.renderPartition({visual,sql,bridge:performanceLabBridge()});return;}
+    window.PerformanceLibraryLab?.destroy(visual);
     if(performanceMode==='partition'){renderPartitionPerformance(sql,visual);return;}
     if(performanceMode==='types'){renderIndexTypes(sql,visual);return;}
     if(performanceMode==='sort'){renderSortPerformance(sql,visual);return;}

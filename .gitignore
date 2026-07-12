@@ -1,7 +1,4 @@
 node_modules
 dist
 .vite
-demo/slides/
-demo/__pycache__/
-demo/output/*.wav
-demo/output/preview-*.png
+demo/

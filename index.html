@@ -471,20 +471,82 @@
   .built-with{ margin-top:50px; padding-top:24px; border-top:1px solid var(--line); font-size:13px; color: var(--ink-faint); }
 
   @media (max-width: 760px){
+    .topbar{ position:relative; top:auto; backdrop-filter:none; }
+    .brand{ padding:14px 14px 6px; gap:4px 8px; }
+    .brand h1{ font-size:18px; }
+    .brand .sub{ width:100%; font-size:12px; line-height:1.4; }
+    .control-strip{ padding:4px 14px 12px; }
+    .examples-row{ gap:6px; margin-bottom:9px; }
+    .ex-btn{ min-height:36px; padding:6px 9px; font-size:10px; }
     .pipeline-inner{ flex-direction:column; }
     .ribbon-wrap{ width:100%; height:34px; }
     .stage-band,.stage-band[data-stage-key="group"]{ min-width:0; max-width:none; width:100%; }
     .editor-row{ flex-direction:column; }
+    #queryInput{ min-height:92px; max-height:140px; padding:13px 14px; font-size:13px; }
+    .side-controls{ display:grid; grid-template-columns:minmax(0,1fr) 92px; gap:8px; width:100%; }
+    .dataset-select,.icon-btn{ min-width:0; width:100%; height:48px; min-height:48px; padding:0 10px; }
+    .token-strip{ gap:4px; margin-top:8px; }
+    .tok-chip{ font-size:10px; padding:3px 6px; }
+    .meta-row{ margin-top:8px; gap:7px; }
+    .status-msg{ font-size:10.5px; }
+    .legend{ gap:8px 10px; }
+    .legend-item{ font-size:9px; }
     #finalChartHolder{ padding:14px; }
     .final-result table{ min-width:680px; }
-    .side-controls{ flex-direction:row; }
-    .performance-panel{ margin:10px 14px; }
-    .performance-head{ flex-direction:column; }
+    .performance-panel{ margin:8px; padding:12px; border-radius:14px; scroll-margin-top:8px; }
+    .performance-head{ position:sticky; top:0; z-index:35; display:grid; grid-template-columns:1fr 38px; gap:10px; margin:-12px -12px 12px; padding:12px; border-bottom:1px solid var(--line); border-radius:13px 13px 0 0; background:rgba(255,255,255,.96); backdrop-filter:blur(8px); box-shadow:0 7px 16px rgba(35,31,24,.06); }
+    .performance-head>div:first-child{ grid-column:1/-1; padding-right:42px; }
+    .performance-title{ font-size:15px; }
+    .performance-sub{ font-size:9.5px; padding-right:6px; }
+    .performance-controls{ grid-column:1/-1; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; width:100%; }
+    .performance-controls .perf-tab{ width:100%; min-height:40px; padding:7px 4px; font-size:9px; }
+    .perf-switch{ grid-column:1/-1; min-height:40px; justify-content:center; gap:7px; padding:4px; border:1px solid var(--line-strong); border-radius:9px; background:var(--paper-2); font-size:9px; text-align:center; }
+    .perf-close{ position:absolute; top:12px; right:12px; width:36px; height:36px; padding:0; }
     .perf-summary,.perf-story{ grid-template-columns:1fr; }.perf-arrow{ transform:rotate(90deg); }
+    .saving-banner{ flex-direction:column; align-items:flex-start; padding:11px 12px; }
+    .saving-banner b{ font-size:17px; }
+    .workbench{ min-height:0; padding:12px; }
     .story-arrow{ transform:rotate(90deg); min-height:38px; }.story-arrow small{display:none;}
     .partition-grid{ grid-template-columns:repeat(2,1fr); }
     .storage-scene{ grid-template-columns:repeat(2,1fr); }
-    .type-playbar{align-items:stretch}.type-playbar label{width:100%}.type-playbar input[type="range"]{flex:1}.search-caption{flex-basis:100%}.bit-row{ grid-template-columns:72px repeat(var(--bit-count),17px); overflow-x:auto; }.bit-detail{margin-left:0}.composite-list{grid-template-columns:1fr 1fr}.prefix-tests{grid-template-columns:1fr}.hash-scene,.partial-scene{grid-template-columns:1fr}.hash-arrow{transform:rotate(90deg)}.bucket-grid{grid-template-columns:repeat(2,1fr)}
+    .index-type-tabs{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; margin-bottom:10px; }
+    .index-type-tabs button{ width:100%; min-height:40px; padding:7px 4px; font-size:9px; }
+    .index-type-scene{ min-height:0; padding:12px; border-radius:12px; }
+    .type-heading{ flex-direction:column; gap:8px; margin-bottom:10px; }
+    .type-heading h4{ font-size:16px; line-height:1.25; }
+    .type-heading p{ font-size:10px; }
+    .support-badge{ align-self:flex-start; }
+    .type-playbar{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); align-items:stretch; gap:8px; padding:10px; }
+    .type-playbar>strong,.type-playbar>label,.type-playbar>.search-caption{ grid-column:1/-1; }
+    .type-playbar label{ width:100%; flex-direction:column; align-items:stretch; }
+    .type-playbar input[type="range"]{ width:100%; min-height:30px; }
+    .type-choice{ width:100%; min-height:42px; padding:7px 6px; white-space:normal; }
+    .search-caption{ min-height:0; padding:9px; font-size:9.5px; }
+    .tree-level{ width:100%; gap:5px; }
+    .tree-node{ min-width:0; flex:1; padding:7px 4px; font-size:8px; }
+    .tree-arrow{ text-align:center; font-size:10px; }
+    .sort-lane,.sort-lane.ordered{ min-height:0; flex-wrap:wrap; overflow:visible; padding:8px; gap:5px; }
+    .sort-chip{ min-width:38px; flex:1 0 38px; }
+    .bit-row{ grid-template-columns:repeat(6,minmax(0,1fr)); gap:5px; padding:8px; margin-bottom:8px; border:1px solid var(--line); border-radius:9px; background:var(--paper-2); overflow:visible; }
+    .bit-label{ grid-column:1/-1; margin-bottom:2px; font-size:9px; }
+    .bit{ height:36px; }
+    .bit-op{ margin:9px 0; padding:8px; border-radius:8px; background:var(--c-where-bg); text-align:center; line-height:1.45; }
+    .bit-detail{ margin-left:0; font-size:9px; }
+    .composite-list{ grid-template-columns:1fr 1fr; gap:6px; }
+    .composite-key b,.composite-key span{ padding:8px 4px; }
+    .prefix-tests{ grid-template-columns:1fr; }
+    .query-verdict{ align-items:flex-start; padding:10px; overflow-wrap:anywhere; }
+    .hash-scene,.partial-scene{ grid-template-columns:1fr; gap:10px; }
+    .hash-input{ padding:14px 10px; }
+    .hash-arrow{ transform:rotate(90deg); }
+    .bucket-grid{ grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; }
+    .hash-bucket{ min-width:0; min-height:88px; padding:8px; overflow-wrap:anywhere; }
+    .partial-pool{ grid-template-columns:repeat(6,minmax(0,1fr)); padding:8px; }
+    .partial-stat{ gap:12px; }
+    .plain-lesson{ padding:10px; }
+    .plain-lesson .lesson-icon{ width:32px; height:32px; }
+    article{ padding:42px 18px 72px; }
+    article h2{ font-size:23px; }
   }
 </style>
 </head>

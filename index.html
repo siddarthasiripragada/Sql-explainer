@@ -73,6 +73,35 @@
   .more-sql-menu button{ font-family:var(--mono); font-size:10.5px; padding:8px; border-radius:8px; border:1px solid var(--line); background:var(--paper); color:var(--ink-dim); cursor:pointer; }
   .more-sql-menu button:hover{ border-color:var(--c-group); color:var(--c-group); background:var(--c-group-bg); }
 
+  /* ---------- performance lab ---------- */
+  .performance-panel{ margin:14px 28px 2px; background:#fff; border:1.5px solid var(--line-strong); border-radius:16px; padding:16px; box-shadow:0 10px 32px rgba(35,31,24,.07); }
+  .performance-panel[hidden]{ display:none; }
+  .performance-head{ display:flex; justify-content:space-between; align-items:flex-start; gap:16px; margin-bottom:14px; }
+  .performance-title{ font:700 14px var(--sora); color:var(--ink); }
+  .performance-sub{ font:10.5px/1.5 var(--mono); color:var(--ink-faint); margin-top:3px; }
+  .performance-controls{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .perf-tab,.perf-close{ border:1px solid var(--line-strong); background:var(--paper-2); color:var(--ink-dim); border-radius:9px; padding:7px 10px; font:10.5px var(--mono); cursor:pointer; }
+  .perf-tab.active{ color:var(--c-group); border-color:var(--c-group); background:var(--c-group-bg); }
+  .perf-switch{ display:flex; align-items:center; gap:7px; font:10.5px var(--mono); color:var(--ink-dim); cursor:pointer; }
+  .perf-switch input{ accent-color:var(--c-select); }
+  .perf-summary{ display:grid; grid-template-columns:1fr 52px 1fr; align-items:center; gap:12px; }
+  .perf-card{ min-height:140px; border:1px solid var(--line); border-radius:13px; padding:13px; background:var(--paper-2); transition:.3s ease; }
+  .perf-card.optimized{ background:var(--c-select-bg); border-color:rgba(13,148,136,.35); }
+  .perf-card-label{ font:700 10px var(--sora); text-transform:uppercase; letter-spacing:.06em; color:var(--ink-dim); }
+  .perf-big{ font:800 28px var(--sora); color:var(--ink); margin:8px 0 2px; }
+  .perf-caption{ font:10px/1.5 var(--mono); color:var(--ink-faint); }
+  .perf-plan{ margin-top:10px; padding:8px; border-radius:8px; background:#fff; font:9.5px/1.5 var(--mono); color:var(--ink-dim); overflow-wrap:anywhere; }
+  .perf-arrow{ text-align:center; color:var(--c-select); font:700 20px var(--mono); }
+  .partition-grid{ display:grid; grid-template-columns:repeat(4,minmax(120px,1fr)); gap:9px; }
+  .partition-card{ position:relative; overflow:hidden; min-height:105px; padding:12px; border:1px solid var(--line); border-radius:12px; background:var(--c-group-bg); transition:.35s ease; }
+  .partition-card.pruned{ opacity:.3; filter:grayscale(.7); transform:scale(.97); }
+  .partition-card.scanned{ border-color:var(--c-group); box-shadow:0 0 0 2px rgba(139,92,246,.12); }
+  .partition-key{ font:700 11px var(--mono); color:var(--c-group); }
+  .partition-count{ font:800 24px var(--sora); color:var(--ink); margin-top:13px; }
+  .partition-rows{ font:9px var(--mono); color:var(--ink-faint); }
+  .pruned-badge{ position:absolute; top:8px; right:8px; font:8px var(--mono); color:var(--c-limit); }
+  .perf-note{ margin-top:10px; font:10px/1.5 var(--mono); color:var(--ink-faint); }
+
   .editor-row{ display:flex; gap:10px; }
   .editor-wrap{
     flex:1; position:relative; background:#fff;
@@ -335,6 +364,10 @@
     #finalChartHolder{ padding:14px; }
     .final-result table{ min-width:680px; }
     .side-controls{ flex-direction:row; }
+    .performance-panel{ margin:10px 14px; }
+    .performance-head{ flex-direction:column; }
+    .perf-summary{ grid-template-columns:1fr; }.perf-arrow{ transform:rotate(90deg); }
+    .partition-grid{ grid-template-columns:repeat(2,1fr); }
   }
 </style>
 </head>
@@ -383,6 +416,11 @@
     </div>
   </div>
 </header>
+
+<section class="performance-panel" id="performancePanel" aria-label="SQL performance visualizer" hidden>
+  <div class="performance-head"><div><div class="performance-title">Performance lab</div><div class="performance-sub">See how physical access strategies change the work behind the same SQL result.</div></div><div class="performance-controls"><button class="perf-tab active" data-perf-mode="index">INDEX</button><button class="perf-tab" data-perf-mode="partition">PARTITION</button><label class="perf-switch"><input type="checkbox" id="perfEnabled" checked> optimization on</label><button class="perf-close" id="perfClose" aria-label="Close performance lab">✕</button></div></div>
+  <div id="performanceVisual"></div>
+</section>
 
 <section class="diagram-section">
   <div class="playback-row" id="sliderRow" style="display:none;"></div>
@@ -545,7 +583,7 @@
     { key:'result',   label:'AFTER',       color:'--c-order',   bg:'--c-order-bg' },
   ];
 
-  let SQL = null, db = null, currentDataset = 'bank', debounceTimer = null, lastStages = [];
+  let SQL = null, db = null, currentDataset = 'bank', debounceTimer = null, lastStages = [], performanceMode='index';
   const el = (id) => document.getElementById(id);
   const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 
@@ -634,12 +672,26 @@
     });
     wrap.append(toggle,menu);
     row.appendChild(wrap);
+    const perf=document.createElement('button');
+    perf.className='ex-btn';perf.id='performanceToggle';perf.textContent='performance ⚡';perf.setAttribute('aria-expanded','false');
+    perf.addEventListener('click',()=>{
+      const panel=el('performancePanel'),opening=panel.hidden;panel.hidden=!opening;perf.setAttribute('aria-expanded',String(opening));
+      if(opening)renderPerformance(el('queryInput').value);
+    });
+    row.appendChild(perf);
   }
 
   document.addEventListener('click', () => {
     document.querySelectorAll('.more-sql-menu.open').forEach(m => m.classList.remove('open'));
     document.querySelectorAll('.more-sql-wrap [aria-expanded="true"]').forEach(b => b.setAttribute('aria-expanded','false'));
   });
+  document.querySelectorAll('[data-perf-mode]').forEach(btn=>btn.addEventListener('click',()=>{
+    performanceMode=btn.dataset.perfMode;
+    document.querySelectorAll('[data-perf-mode]').forEach(b=>b.classList.toggle('active',b===btn));
+    renderPerformance(el('queryInput').value);
+  }));
+  el('perfEnabled').addEventListener('change',()=>renderPerformance(el('queryInput').value));
+  el('perfClose').addEventListener('click',()=>{el('performancePanel').hidden=true;el('performanceToggle')?.setAttribute('aria-expanded','false');});
 
   el('queryInput').addEventListener('input', () => {
     [...el('examplesRow').children].forEach(c => c.classList.remove('active'));
@@ -876,12 +928,57 @@
   }
 
   /* ============================================================
+     PERFORMANCE LAB — real index plans + partition-pruning model
+  ============================================================ */
+  function queryPlan(sql){
+    const p=exec(`EXPLAIN QUERY PLAN ${sql}`);
+    return rowsToObjects(p.columns,p.rows).map(r=>r.detail||Object.values(r).at(-1)).join(' · ');
+  }
+  function renderPerformance(raw){
+    const visual=el('performanceVisual');if(!visual||!db)return;
+    const sql=raw.trim().replace(/;+\s*$/,'');
+    if(!/^SELECT\b/i.test(sql)){visual.innerHTML='<div class="perf-note">Performance plans are shown for SELECT queries. Choose a SELECT example above.</div>';return;}
+    if(performanceMode==='partition'){renderPartitionPerformance(sql,visual);return;}
+    const table=sql.match(/\bFROM\s+([A-Za-z_]\w*)/i)?.[1];
+    const where=sql.match(/\bWHERE\b\s+([\s\S]*?)(?=\bGROUP\s+BY\b|\bHAVING\b|\bORDER\s+BY\b|\bLIMIT\b|$)/i)?.[1]?.trim();
+    const column=where?.match(/(?:[A-Za-z_]\w*\.)?([A-Za-z_]\w*)\s*(?:=|>|<|LIKE\b|IN\b)/i)?.[1];
+    if(!table){visual.innerHTML='<div class="perf-note">Add a FROM clause to inspect the access plan.</div>';return;}
+    try{
+      const total=exec(`SELECT COUNT(*) AS n FROM ${table}`).rows[0][0];
+      let matched=total;try{if(where)matched=exec(`SELECT COUNT(*) AS n FROM ${table} WHERE ${where}`).rows[0][0]}catch(e){}
+      const beforePlan=queryPlan(sql);let afterPlan=beforePlan,indexUsable=false;
+      if(column&&/^[A-Za-z_]\w*$/.test(column)){
+        const schema=schemaSnapshot(table).rows.map(r=>r.name);
+        if(schema.includes(column)){
+          db.run('SAVEPOINT perf_index');
+          try{db.run(`CREATE INDEX __visual_${table}_${column} ON ${table}(${column})`);afterPlan=queryPlan(sql);indexUsable=true;}finally{db.run('ROLLBACK TO perf_index');db.run('RELEASE perf_index');}
+        }
+      }
+      const enabled=el('perfEnabled').checked,afterScan=enabled&&indexUsable?matched:total;
+      visual.innerHTML=`<div class="perf-summary"><div class="perf-card"><div class="perf-card-label">without index</div><div class="perf-big">${total}</div><div class="perf-caption">rows considered from ${escapeHtml(table)}</div><div class="perf-plan">${escapeHtml(beforePlan)}</div></div><div class="perf-arrow">→</div><div class="perf-card ${enabled&&indexUsable?'optimized':''}"><div class="perf-card-label">${enabled?'with temporary index':'optimization off'}</div><div class="perf-big">${afterScan}</div><div class="perf-caption">${indexUsable?`rows matching via ${escapeHtml(column)} lookup`:'add a simple WHERE condition to demonstrate an index seek'}</div><div class="perf-plan">${escapeHtml(enabled?afterPlan:beforePlan)}</div></div></div><div class="perf-note">The comparison uses SQLite EXPLAIN QUERY PLAN. The teaching index exists only inside a rolled-back savepoint.</div>`;
+    }catch(err){visual.innerHTML=`<div class="perf-note">Could not explain this query: ${escapeHtml(cleanSqlError(err.message))}</div>`;}
+  }
+  function renderPartitionPerformance(sql,visual){
+    const config=currentDataset==='bank'?{table:'bank_transactions',column:'branch_id',keys:[1,2,3,4]}:{table:'orders',column:'customer_id',keys:[1,2,3,4]};
+    try{
+      const grouped=exec(`SELECT ${config.column}, COUNT(*) AS n FROM ${config.table} GROUP BY ${config.column}`);
+      const counts=new Map(grouped.rows.map(r=>[Number(r[0]),Number(r[1])]));
+      const targetMatch=sql.match(new RegExp(`(?:\\w+\\.)?${config.column}\\s*=\\s*(\\d+)`,'i'));
+      const target=targetMatch?Number(targetMatch[1]):null,enabled=el('perfEnabled').checked,total=[...counts.values()].reduce((a,b)=>a+b,0);
+      const scanned=enabled&&target!==null?(counts.get(target)||0):total;
+      visual.innerHTML=`<div class="perf-summary" style="grid-template-columns:1fr 52px 1fr;margin-bottom:12px"><div class="perf-card"><div class="perf-card-label">all partitions</div><div class="perf-big">${total}</div><div class="perf-caption">rows scanned without pruning</div></div><div class="perf-arrow">→</div><div class="perf-card ${enabled&&target!==null?'optimized':''}"><div class="perf-card-label">${enabled?'partition pruning on':'optimization off'}</div><div class="perf-big">${scanned}</div><div class="perf-caption">${target!==null?`query targets ${config.column} = ${target}`:`add WHERE ${config.column} = 1 to prune partitions`}</div></div></div><div class="partition-grid">${config.keys.map(k=>{const pruned=enabled&&target!==null&&k!==target;return`<div class="partition-card ${pruned?'pruned':'scanned'}"><div class="partition-key">${config.column} = ${k}</div><div class="partition-count">${counts.get(k)||0}</div><div class="partition-rows">rows in partition</div>${pruned?'<div class="pruned-badge">skipped</div>':''}</div>`}).join('')}</div><div class="perf-note">Concept simulation: SQLite does not provide native table partitioning. The cards demonstrate how engines with partition pruning skip unrelated physical segments. ${target===null?'<button class="perf-tab" id="partitionDemo">try pruning example</button>':''}</div>`;
+      el('partitionDemo')?.addEventListener('click',()=>{const q=`SELECT * FROM ${config.table} WHERE ${config.column} = 1;`;el('queryInput').value=q;updateUrlHash(q);runPipeline();});
+    }catch(err){visual.innerHTML=`<div class="perf-note">Could not build the partition model: ${escapeHtml(cleanSqlError(err.message))}</div>`;}
+  }
+
+  /* ============================================================
      BUILD & RUN CUMULATIVE PIPELINE QUERIES (real, per stage)
   ============================================================ */
   function runPipeline(){
     const raw = el('queryInput').value;
     el('errorHolder').innerHTML = '';
     renderTokenStrip(raw);
+    if(!el('performancePanel').hidden)renderPerformance(raw);
     const command = raw.trim().match(/^([A-Z]+)/i)?.[1]?.toUpperCase();
     if (command && command !== 'SELECT'){
       renderThresholdSlider(null, raw);
